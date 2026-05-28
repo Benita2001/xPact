@@ -295,11 +295,45 @@
     @media (max-width: 880px) {
       .how-grid { grid-template-columns: 1fr; }
       .sdk-grid { grid-template-columns: 1fr; gap: 44px; }
+      .arch-flow { gap: 0; }
     }
     @media (max-width: 640px) {
+      .container { padding: 0 16px; }
       .nav-link { display: none; }
-      .crow { flex-direction: column; align-items: flex-start; }
+      .nav-cta { font-size: 12px; padding: 6px 12px; }
+
+      section { padding: 60px 0; }
+      #hero { padding: 52px 0 64px; }
+      #contracts { padding: 48px 0; }
+
+      .hero-hed { letter-spacing: -1.5px; }
+      .hero-sub { font-size: 15px; }
+      .hero-btns { flex-direction: column; align-items: stretch; gap: 10px; }
+      .hero-btns .btn-fill,
+      .hero-btns .btn-ghost,
+      .hero-btns .btn-npm { width: 100%; justify-content: center; }
+
+      .how-card { padding: 28px 20px 24px; }
+
+      .arch-flow { justify-content: flex-start; }
+      .arch-node { min-width: 88px; padding: 10px 14px; }
+      .arch-node-name { font-size: 11px; }
+      .arch-arr { min-width: 14px; max-width: 24px; }
+
+      .cblock { padding: 24px 20px; }
+      .crow { flex-direction: column; align-items: flex-start; gap: 12px; }
       .crow-addr { font-size: 11px; word-break: break-all; }
+      .crow-actions { flex-wrap: wrap; }
+
+      .foot-inner { flex-direction: column; align-items: flex-start; gap: 20px; }
+      .foot-links { flex-wrap: wrap; gap: 16px; }
+
+      .sec-title { letter-spacing: -.8px; }
+    }
+    @media (max-width: 400px) {
+      .arch-flow { flex-wrap: nowrap; }
+      .arch-node { min-width: 76px; padding: 8px 10px; }
+      .arch-node-role { display: none; }
     }
   </style>
 </head>
