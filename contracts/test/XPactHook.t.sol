@@ -10,15 +10,14 @@ import {IHooks} from "@uniswap/v4-core/interfaces/IHooks.sol";
 import {Hooks} from "@uniswap/v4-core/libraries/Hooks.sol";
 import {SwapParams} from "@uniswap/v4-core/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/types/BalanceDelta.sol";
-import {TestERC20} from "@uniswap/v4-core/test/TestERC20.sol";
 import {XPactHook} from "../src/XPactHook.sol";
 
-/// @dev Call hooks directly via vm.prank(address(manager)), bypassing the full swap stack.
-///      This tests pact logic in isolation without needing pool liquidity or routing setup.
+/// @dev CREATE is tested via hook.createPact{value}() directly.
+///      ACCEPT/DELIVER/CANCEL use vm.prank(address(manager)) + hook.beforeSwap(), bypassing the full swap stack.
 contract XPactHookTest is Test {
     // ──────────────────────────── constants ────────────────────────
 
-    uint256 constant PAYMENT = 1_000e18;
+    uint256 constant PAYMENT = 1 ether;
     string constant JOB_DESC = "Build a smart contract for xPact";
     bytes32 constant RESULT_HASH = keccak256("work_completed_ipfs_hash");
 
@@ -29,7 +28,6 @@ contract XPactHookTest is Test {
 
     PoolManager manager;
     XPactHook hook;
-    TestERC20 paymentToken;
 
     address agentA;
     address agentB;
@@ -40,26 +38,23 @@ contract XPactHookTest is Test {
         agentA = makeAddr("agentA");
         agentB = makeAddr("agentB");
 
+        vm.deal(agentA, PAYMENT * 10);
+
         manager = new PoolManager(address(this));
         hook = _deployHook(IPoolManager(address(manager)));
-        paymentToken = new TestERC20(0);
-
-        paymentToken.mint(agentA, PAYMENT * 10);
-        vm.prank(agentA);
-        paymentToken.approve(address(hook), type(uint256).max);
     }
 
     // ──────────────────────────── tests ────────────────────────────
 
     function test_CreatePact() public {
         uint256 deadline = block.timestamp + 7 days;
-        bytes32 expectedId = _pactId(agentA, block.timestamp, deadline);
+        bytes32 expectedId = _pactId(agentA, block.timestamp);
 
         vm.expectEmit(address(hook));
-        emit XPactHook.PactCreated(expectedId, agentA, PAYMENT, address(paymentToken), deadline);
+        emit XPactHook.PactCreated(expectedId, agentA, PAYMENT, deadline);
 
-        vm.prank(address(manager));
-        hook.beforeSwap(agentA, _dummyKey(), _dummySwapParams(), _encodeCreate(deadline));
+        vm.prank(agentA);
+        hook.createPact{value: PAYMENT}(JOB_DESC, deadline);
 
         (
             bytes32 id,
@@ -67,7 +62,6 @@ contract XPactHookTest is Test {
             address b,
             ,
             uint256 payment,
-            address pToken,
             ,
             XPactHook.PactStatus status,
             ,
@@ -77,18 +71,17 @@ contract XPactHookTest is Test {
         assertEq(a, agentA, "agentA mismatch");
         assertEq(b, address(0), "agentB should be unset");
         assertEq(payment, PAYMENT, "payment amount mismatch");
-        assertEq(pToken, address(paymentToken), "payment token mismatch");
         assertEq(uint8(status), uint8(XPactHook.PactStatus.Open), "status should be Open");
-        assertEq(paymentToken.balanceOf(address(hook)), PAYMENT, "hook should hold payment");
+        assertEq(address(hook).balance, PAYMENT, "hook should hold OKB payment");
     }
 
     function test_AcceptPact() public {
         uint256 deadline = block.timestamp + 7 days;
-        bytes32 pactId = _pactId(agentA, block.timestamp, deadline);
+        bytes32 pactId = _pactId(agentA, block.timestamp);
 
         // prerequisite: create the pact
-        vm.prank(address(manager));
-        hook.beforeSwap(agentA, _dummyKey(), _dummySwapParams(), _encodeCreate(deadline));
+        vm.prank(agentA);
+        hook.createPact{value: PAYMENT}(JOB_DESC, deadline);
 
         vm.expectEmit(address(hook));
         emit XPactHook.PactAccepted(pactId, agentB);
@@ -96,7 +89,7 @@ contract XPactHookTest is Test {
         vm.prank(address(manager));
         hook.beforeSwap(agentB, _dummyKey(), _dummySwapParams(), _encodeAccept(pactId));
 
-        (, , address b, , , , , XPactHook.PactStatus status, , ) = hook.pacts(pactId);
+        (, , address b, , , , XPactHook.PactStatus status, , ) = hook.pacts(pactId);
 
         assertEq(b, agentB, "agentB mismatch");
         assertEq(uint8(status), uint8(XPactHook.PactStatus.Active), "status should be Active");
@@ -104,12 +97,12 @@ contract XPactHookTest is Test {
 
     function test_DeliverPact() public {
         uint256 deadline = block.timestamp + 7 days;
-        bytes32 pactId = _pactId(agentA, block.timestamp, deadline);
+        bytes32 pactId = _pactId(agentA, block.timestamp);
         bytes memory deliverData = _encodeDeliver(pactId);
 
         // prerequisite: create then accept
-        vm.prank(address(manager));
-        hook.beforeSwap(agentA, _dummyKey(), _dummySwapParams(), _encodeCreate(deadline));
+        vm.prank(agentA);
+        hook.createPact{value: PAYMENT}(JOB_DESC, deadline);
 
         vm.prank(address(manager));
         hook.beforeSwap(agentB, _dummyKey(), _dummySwapParams(), _encodeAccept(pactId));
@@ -121,7 +114,7 @@ contract XPactHookTest is Test {
         vm.prank(address(manager));
         hook.beforeSwap(agentB, _dummyKey(), _dummySwapParams(), deliverData);
 
-        // afterSwap sees Settled pact and releases payment
+        // afterSwap sees Settled pact and releases OKB payment to agentB
         vm.expectEmit(address(hook));
         emit XPactHook.PactSettled(pactId, agentB, PAYMENT);
 
@@ -129,12 +122,12 @@ contract XPactHookTest is Test {
         hook.afterSwap(address(0), _dummyKey(), _dummySwapParams(), BalanceDelta.wrap(0), deliverData);
 
         // assertions
-        (, , , , , , bytes32 rHash, XPactHook.PactStatus status, , ) = hook.pacts(pactId);
+        (, , , , , bytes32 rHash, XPactHook.PactStatus status, , ) = hook.pacts(pactId);
 
         assertEq(rHash, RESULT_HASH, "result hash mismatch");
         assertEq(uint8(status), uint8(XPactHook.PactStatus.Settled), "status should be Settled");
-        assertEq(paymentToken.balanceOf(agentB), PAYMENT, "agentB should receive payment");
-        assertEq(paymentToken.balanceOf(address(hook)), 0, "hook should have no remaining balance");
+        assertEq(agentB.balance, PAYMENT, "agentB should receive OKB payment");
+        assertEq(address(hook).balance, 0, "hook should have no remaining balance");
         assertEq(hook.reputation(agentB), 1, "agentB reputation should increment");
     }
 
@@ -161,8 +154,8 @@ contract XPactHookTest is Test {
         revert("XPactHookTest: salt not found");
     }
 
-    /// Computes the pactId the same way XPactHook does in _handleCreate.
-    function _pactId(address sender, uint256 ts, uint256 /*deadline*/) internal pure returns (bytes32) {
+    /// Computes the pactId the same way XPactHook.createPact does.
+    function _pactId(address sender, uint256 ts) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(sender, ts, JOB_DESC, PAYMENT));
     }
 
@@ -178,10 +171,6 @@ contract XPactHookTest is Test {
 
     function _dummySwapParams() internal pure returns (SwapParams memory) {
         return SwapParams({zeroForOne: true, amountSpecified: -1, sqrtPriceLimitX96: 0});
-    }
-
-    function _encodeCreate(uint256 deadline) internal view returns (bytes memory) {
-        return abi.encode(uint8(0), abi.encode(JOB_DESC, PAYMENT, address(paymentToken), deadline));
     }
 
     function _encodeAccept(bytes32 pactId) internal pure returns (bytes memory) {

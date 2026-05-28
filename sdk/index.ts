@@ -26,20 +26,19 @@ const POOL_SWAP_TEST_ABI = parseAbi([
   "function swap((address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks) key, (bool zeroForOne, int256 amountSpecified, uint160 sqrtPriceLimitX96) params, (bool takeClaims, bool settleUsingBurn) testSettings, bytes hookData) payable returns (int256)",
 ]);
 
-const ERC20_ABI = parseAbi([
-  "function approve(address spender, uint256 amount) returns (bool)",
+const HOOK_ABI = parseAbi([
+  "function createPact(string calldata jobDescription, uint256 deadline) external payable returns (bytes32)",
 ]);
 
-const ACTION_CREATE = 0;
 const ACTION_ACCEPT = 1;
 const ACTION_DELIVER = 2;
 
 // MIN_SQRT_PRICE + 1; used as price limit for minimal zeroForOne swaps
 const SQRT_PRICE_LIMIT = 4295128740n;
 
-// keccak256("PactCreated(bytes32,address,uint256,address,uint256)")
+// keccak256("PactCreated(bytes32,address,uint256,uint256)")
 const PACT_CREATED_SIG = keccak256(
-  toBytes("PactCreated(bytes32,address,uint256,address,uint256)"),
+  toBytes("PactCreated(bytes32,address,uint256,uint256)"),
 );
 
 export interface PoolKeyConfig {
@@ -52,7 +51,6 @@ export interface PoolKeyConfig {
 export interface CreateParams {
   job: string;
   payment: bigint;
-  tokenAddress: Address;
   deadline: bigint;
 }
 
@@ -100,29 +98,21 @@ export class XPact {
   }
 
   /**
-   * agentA: create a pact and lock payment.
-   * Requires prior ERC20 approval or this method handles it automatically.
+   * agentA: create a pact and lock native OKB payment directly in the hook.
    * Returns the pactId emitted in PactCreated.
    */
-  async create({ job, payment, tokenAddress, deadline }: CreateParams): Promise<Hex> {
-    await this._approve(tokenAddress, this.hookAddress, payment);
+  async create({ job, payment, deadline }: CreateParams): Promise<Hex> {
+    const hash = await this.wallet.writeContract({
+      chain: xLayerTestnet,
+      account: this.account,
+      address: this.hookAddress,
+      abi: HOOK_ABI,
+      functionName: "createPact",
+      args: [job, deadline],
+      value: payment,
+    });
 
-    const payload = encodeAbiParameters(
-      [
-        { type: "string" },
-        { type: "uint256" },
-        { type: "address" },
-        { type: "uint256" },
-      ],
-      [job, payment, tokenAddress, deadline],
-    );
-
-    const hookData = encodeAbiParameters(
-      [{ type: "uint8" }, { type: "bytes" }],
-      [ACTION_CREATE, payload],
-    );
-
-    const receipt = await this._swap(hookData);
+    const receipt = await this.client.waitForTransactionReceipt({ hash });
 
     const log = receipt.logs.find((l) => l.topics[0] === PACT_CREATED_SIG);
     if (!log?.topics[1]) throw new Error("PactCreated event not found in receipt");
@@ -145,7 +135,7 @@ export class XPact {
   }
 
   /**
-   * agentB: deliver work. Settles the pact and releases payment to agentB.
+   * agentB: deliver work. Settles the pact and releases OKB payment to agentB.
    * resultHash = keccak256(JSON.stringify(result))
    */
   async deliver({ pactId, result }: DeliverParams): Promise<void> {
@@ -162,18 +152,6 @@ export class XPact {
     );
 
     await this._swap(hookData);
-  }
-
-  private async _approve(token: Address, spender: Address, amount: bigint): Promise<void> {
-    const hash = await this.wallet.writeContract({
-      chain: xLayerTestnet,
-      account: this.account,
-      address: token,
-      abi: ERC20_ABI,
-      functionName: "approve",
-      args: [spender, amount],
-    });
-    await this.client.waitForTransactionReceipt({ hash });
   }
 
   private async _swap(hookData: Hex): Promise<TransactionReceipt> {

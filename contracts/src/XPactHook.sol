@@ -9,10 +9,9 @@ import {BalanceDelta} from "@uniswap/v4-core/types/BalanceDelta.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "@uniswap/v4-core/types/BeforeSwapDelta.sol";
 import {SwapParams} from "@uniswap/v4-core/types/PoolOperation.sol";
 import {Hooks} from "@uniswap/v4-core/libraries/Hooks.sol";
-import {IERC20Minimal as IERC20} from "@uniswap/v4-core/interfaces/external/IERC20Minimal.sol";
 
 /// @notice Uniswap V4 hook enabling AI agents to create, accept, and settle service agreements trustlessly.
-/// Payment is locked on CREATE and auto-released to agentB on verified delivery.
+/// Payment is locked in native OKB on createPact() and auto-released to agentB on verified delivery.
 ///
 /// Hook flags required (afterInitialize | beforeSwap | afterSwap):
 ///   bit 12 (0x1000) + bit 7 (0x0080) + bit 6 (0x0040) = 0x10C0
@@ -33,7 +32,6 @@ contract XPactHook is BaseHook {
         address agentB;
         string jobDescription;
         uint256 payment;
-        address paymentToken;
         bytes32 resultHash;
         PactStatus status;
         uint256 createdAt;
@@ -42,7 +40,6 @@ contract XPactHook is BaseHook {
 
     // ──────────────────────────── constants ────────────────────────
 
-    uint8 internal constant ACTION_CREATE = 0;
     uint8 internal constant ACTION_ACCEPT = 1;
     uint8 internal constant ACTION_DELIVER = 2;
     uint8 internal constant ACTION_CANCEL = 3;
@@ -54,13 +51,7 @@ contract XPactHook is BaseHook {
 
     // ──────────────────────────── events ───────────────────────────
 
-    event PactCreated(
-        bytes32 indexed id,
-        address indexed agentA,
-        uint256 payment,
-        address paymentToken,
-        uint256 deadline
-    );
+    event PactCreated(bytes32 indexed id, address indexed agentA, uint256 payment, uint256 deadline);
     event PactAccepted(bytes32 indexed id, address indexed agentB);
     event PactDelivered(bytes32 indexed id, address indexed agentB, bytes32 resultHash);
     event PactSettled(bytes32 indexed id, address indexed agentB, uint256 payment);
@@ -80,6 +71,8 @@ contract XPactHook is BaseHook {
     // ──────────────────────────── constructor ──────────────────────
 
     constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+
+    receive() external payable {}
 
     // ──────────────────────────── hook permissions ─────────────────
 
@@ -102,6 +95,31 @@ contract XPactHook is BaseHook {
         });
     }
 
+    // ──────────────────────────── pact creation ────────────────────
+
+    /// agentA creates a new pact and locks native OKB payment in this contract.
+    function createPact(string calldata jobDescription, uint256 deadline) external payable returns (bytes32) {
+        if (msg.value == 0) revert ZeroPayment();
+        if (bytes(jobDescription).length == 0) revert EmptyJobDescription();
+
+        bytes32 id = keccak256(abi.encodePacked(msg.sender, block.timestamp, jobDescription, msg.value));
+
+        pacts[id] = Pact({
+            id: id,
+            agentA: msg.sender,
+            agentB: address(0),
+            jobDescription: jobDescription,
+            payment: msg.value,
+            resultHash: bytes32(0),
+            status: PactStatus.Open,
+            createdAt: block.timestamp,
+            deadline: deadline
+        });
+
+        emit PactCreated(id, msg.sender, msg.value, deadline);
+        return id;
+    }
+
     // ──────────────────────────── hook callbacks ───────────────────
 
     /// Records pool initialization. No-op beyond selector return.
@@ -115,8 +133,7 @@ contract XPactHook is BaseHook {
         return IHooks.afterInitialize.selector;
     }
 
-    /// Intercepts hookData to detect CREATE, ACCEPT, DELIVER, or CANCEL actions.
-    /// Payment is pulled from the sender (requires prior ERC20 approval) on CREATE.
+    /// Intercepts hookData to detect ACCEPT, DELIVER, or CANCEL actions.
     function beforeSwap(
         address sender,
         PoolKey calldata,
@@ -126,9 +143,7 @@ contract XPactHook is BaseHook {
         if (hookData.length > 0) {
             (uint8 action, bytes memory payload) = abi.decode(hookData, (uint8, bytes));
 
-            if (action == ACTION_CREATE) {
-                _handleCreate(sender, payload);
-            } else if (action == ACTION_ACCEPT) {
+            if (action == ACTION_ACCEPT) {
                 _handleAccept(sender, payload);
             } else if (action == ACTION_DELIVER) {
                 _handleDeliver(sender, payload);
@@ -139,7 +154,7 @@ contract XPactHook is BaseHook {
         return (IHooks.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
     }
 
-    /// Releases locked payment to agentB when the pact referenced in hookData is Settled.
+    /// Releases locked OKB to agentB when the pact referenced in hookData is Settled.
     function afterSwap(
         address,
         PoolKey calldata,
@@ -162,36 +177,6 @@ contract XPactHook is BaseHook {
 
     // ──────────────────────────── internal logic ───────────────────
 
-    /// agentA creates a new pact and locks payment in this contract.
-    /// payload = abi.encode(string jobDescription, uint256 payment, address paymentToken, uint256 deadline)
-    function _handleCreate(address sender, bytes memory payload) internal {
-        (string memory jobDescription, uint256 payment, address paymentToken, uint256 deadline) =
-            abi.decode(payload, (string, uint256, address, uint256));
-
-        if (payment == 0) revert ZeroPayment();
-        if (bytes(jobDescription).length == 0) revert EmptyJobDescription();
-
-        bytes32 id = keccak256(abi.encodePacked(sender, block.timestamp, jobDescription, payment));
-
-        bool ok = IERC20(paymentToken).transferFrom(sender, address(this), payment);
-        if (!ok) revert PaymentTransferFailed();
-
-        pacts[id] = Pact({
-            id: id,
-            agentA: sender,
-            agentB: address(0),
-            jobDescription: jobDescription,
-            payment: payment,
-            paymentToken: paymentToken,
-            resultHash: bytes32(0),
-            status: PactStatus.Open,
-            createdAt: block.timestamp,
-            deadline: deadline
-        });
-
-        emit PactCreated(id, sender, payment, paymentToken, deadline);
-    }
-
     /// agentB accepts an Open pact, becoming the job taker.
     /// payload = abi.encode(bytes32 pactId)
     function _handleAccept(address sender, bytes memory payload) internal {
@@ -209,7 +194,7 @@ contract XPactHook is BaseHook {
     }
 
     /// agentB delivers work by submitting a result hash, moving pact to Settled.
-    /// afterSwap will then release payment.
+    /// afterSwap will then release the OKB payment.
     /// payload = abi.encode(bytes32 pactId, bytes32 resultHash)
     function _handleDeliver(address sender, bytes memory payload) internal {
         (bytes32 pactId, bytes32 resultHash) = abi.decode(payload, (bytes32, bytes32));
@@ -225,7 +210,7 @@ contract XPactHook is BaseHook {
         emit PactDelivered(pactId, sender, resultHash);
     }
 
-    /// agentA cancels an Open pact and reclaims the locked payment.
+    /// agentA cancels an Open pact and reclaims the locked OKB.
     /// payload = abi.encode(bytes32 pactId)
     function _handleCancel(address sender, bytes memory payload) internal {
         bytes32 pactId = abi.decode(payload, (bytes32));
@@ -237,19 +222,18 @@ contract XPactHook is BaseHook {
 
         pact.status = PactStatus.Cancelled;
 
-        bool ok = IERC20(pact.paymentToken).transfer(sender, pact.payment);
+        (bool ok,) = payable(sender).call{value: pact.payment}("");
         if (!ok) revert PaymentTransferFailed();
     }
 
-    /// Transfers locked payment to agentB and increments their reputation score.
+    /// Transfers locked OKB to agentB and increments their reputation score.
     function _releasePayout(Pact storage pact) internal {
         address agentB = pact.agentB;
         uint256 amount = pact.payment;
-        address token = pact.paymentToken;
 
         reputation[agentB] += 1;
 
-        bool ok = IERC20(token).transfer(agentB, amount);
+        (bool ok,) = payable(agentB).call{value: amount}("");
         if (!ok) revert PaymentTransferFailed();
 
         emit PactSettled(pact.id, agentB, amount);

@@ -14,12 +14,11 @@ const RPC_URL = "https://testrpc.xlayer.tech/terigon";
 const HOOK_ADDRESS = "0x88cd934A339d4fe0f2408D60aA540BA8559910C0" as Address;
 const POOL_MANAGER = "0xD1A80439f7431557705F83ec0d047f7246ec68e5" as Address;
 const SWAP_ROUTER = (process.env.SWAP_ROUTER_ADDRESS ?? "0x0000000000000000000000000000000000000001") as Address;
-const MOCK_USDC   = (process.env.USDC_ADDRESS        ?? "0x0000000000000000000000000000000000000002") as Address;
 
 const PACT_ID_FILE = join(__dirname, ".current-pact");
 
 const PACTS_ABI = parseAbi([
-  "function pacts(bytes32) view returns (bytes32 id, address agentA, address agentB, string jobDescription, uint256 payment, address paymentToken, bytes32 resultHash, uint8 status, uint256 createdAt, uint256 deadline)",
+  "function pacts(bytes32) view returns (bytes32 id, address agentA, address agentB, string jobDescription, uint256 payment, bytes32 resultHash, uint8 status, uint256 createdAt, uint256 deadline)",
 ]);
 
 async function sleep(ms: number) {
@@ -40,7 +39,7 @@ async function main() {
     SWAP_ROUTER,
     {
       currency0: "0x0000000000000000000000000000000000000000" as Address,
-      currency1: MOCK_USDC,
+      currency1: "0x0000000000000000000000000000000000000000" as Address,
       fee: 3000,
       tickSpacing: 60,
     },
@@ -75,12 +74,13 @@ async function main() {
     args: [pactId],
   });
 
-  // readContract returns a labeled tuple; [3]=jobDescription, [7]=status
-  if (Number(pact[7]) !== 0) {
-    console.log(`❌ Agent B: Pact is not Open (status=${pact[7]}). Exiting.`);
+  // pact[6] = status (paymentToken removed, indices shifted)
+  if (Number(pact[6]) !== 0) {
+    console.log(`❌ Agent B: Pact is not Open (status=${pact[6]}). Exiting.`);
     process.exit(1);
   }
 
+  // pact[3] = jobDescription (unchanged)
   console.log(`📋 Agent B: Job — "${pact[3]}"`);
   console.log("🤝 Agent B: Accepting pact...");
   await sdk.accept({ pactId });
@@ -100,10 +100,10 @@ async function main() {
   await sdk.deliver({ pactId, result });
   console.log("💸 Agent B: Proof delivered. Waiting for payment...");
 
-  // After deliver() the afterSwap callback releases payment atomically —
+  // After deliver() the afterSwap callback releases OKB atomically —
   // by the time the tx is confirmed, payment is already transferred.
   await sleep(2000);
-  console.log("🎉 Agent B: Payment received!");
+  console.log("🎉 Agent B: OKB payment received!");
 }
 
 main().catch((err) => {
