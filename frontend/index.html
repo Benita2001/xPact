@@ -123,6 +123,16 @@
       transition: border-color .15s, color .15s;
     }
     .btn-ghost:hover { border-color: #444; color: #ddd; }
+    .btn-npm {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      padding: 11px 18px; border-radius: var(--r2);
+      border: 1px solid #2a2a2a; color: #777;
+      background: #0d0d0d; cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-npm:hover { border-color: #444; color: #ccc; }
+    .btn-npm.ok { color: var(--green); border-color: rgba(0,255,148,.3); }
 
     /* ── Terminal ── */
     .terminal {
@@ -199,12 +209,11 @@
     .sdk-grid { display: grid; grid-template-columns: 1fr 1.45fr; gap: 72px; align-items: center; }
     .sdk-feat { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; }
     .sdk-icon {
-      width: 34px; height: 34px; border-radius: var(--r1); display: flex;
-      align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; margin-top: 1px;
+      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; margin-top: 6px;
     }
-    .icon-b { background: rgba(79,142,247,.1); border: 1px solid rgba(79,142,247,.2); }
-    .icon-g { background: rgba(0,255,148,.07); border: 1px solid rgba(0,255,148,.15); }
-    .icon-o { background: rgba(255,107,53,.07); border: 1px solid rgba(255,107,53,.15); }
+    .icon-b { background: var(--blue); }
+    .icon-g { background: var(--green); }
+    .icon-o { background: var(--orange); }
     .sdk-feat h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
     .sdk-feat p  { font-size: 13px; color: #666; line-height: 1.55; }
 
@@ -316,8 +325,7 @@
         xPact
       </a>
       <div class="nav-right">
-        <a href="agents.html" class="nav-link">Agents</a>
-        <a href="https://github.com/0xbeni/xpact" class="nav-link" target="_blank">GitHub</a>
+        <a href="https://github.com/Benita2001/xPact" class="nav-link" target="_blank">GitHub</a>
         <a href="agents.html" class="nav-cta">View Live Agents →</a>
       </div>
     </div>
@@ -342,7 +350,8 @@
     </div>
     <div class="hero-btns">
       <a href="agents.html" class="btn-fill">View Live Agents →</a>
-      <a href="https://github.com/0xbeni/xpact" class="btn-ghost" target="_blank">GitHub ↗</a>
+      <button class="btn-npm" onclick="copyNpm(this)">npm install xpact-sdk</button>
+      <a href="https://github.com/Benita2001/xPact" class="btn-ghost" target="_blank">GitHub ↗</a>
     </div>
     <div class="terminal" style="max-width:664px;margin:0 auto;">
       <div class="t-bar">
@@ -400,21 +409,21 @@
         <h2 class="sec-title">One SDK.<br>Any Agent.</h2>
         <p class="sec-sub" style="margin-bottom:36px">Build AI agents that transact trustlessly on-chain. Three methods — create, accept, deliver. Pure TypeScript, zero dependencies beyond viem.</p>
         <div class="sdk-feat">
-          <div class="sdk-icon icon-b">⚡</div>
+          <div class="sdk-icon icon-b"></div>
           <div>
             <h4>Minimal surface area</h4>
             <p>Three public methods. No framework lock-in. Pure viem under the hood.</p>
           </div>
         </div>
         <div class="sdk-feat">
-          <div class="sdk-icon icon-g">🔐</div>
+          <div class="sdk-icon icon-g"></div>
           <div>
             <h4>Trustless settlement</h4>
             <p>Payment locked in hook on create. Released atomically in <code>afterSwap</code>.</p>
           </div>
         </div>
         <div class="sdk-feat">
-          <div class="sdk-icon icon-o">📡</div>
+          <div class="sdk-icon icon-o"></div>
           <div>
             <h4>Native X Layer</h4>
             <p>Deployed on X Layer testnet. OKX OnchainOS compatible. Chain ID 1952.</p>
@@ -553,7 +562,7 @@
         </div>
       </div>
       <div class="foot-links">
-        <a href="https://github.com/0xbeni/xpact" target="_blank">GitHub</a>
+        <a href="https://github.com/Benita2001/xPact" target="_blank">GitHub</a>
         <a href="https://www.oklink.com/xlayer-test" target="_blank">X Layer Explorer</a>
         <a href="https://twitter.com/0xbeni" target="_blank">@0xbeni</a>
       </div>
@@ -562,6 +571,14 @@
 </footer>
 
 <script>
+  function copyNpm(btn) {
+    navigator.clipboard.writeText('npm install xpact-sdk').then(() => {
+      const prev = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = prev; btn.classList.remove('ok'); }, 2000);
+    });
+  }
   function copyTo(btn, text) {
     navigator.clipboard.writeText(text).then(() => {
       const prev = btn.textContent;

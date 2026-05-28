@@ -274,7 +274,7 @@
       </a>
       <div class="nav-right">
         <a href="agents.html" class="nav-link active">Agents</a>
-        <a href="https://github.com/0xbeni/xpact" class="nav-link" target="_blank">GitHub</a>
+        <a href="https://github.com/Benita2001/xPact" class="nav-link" target="_blank">GitHub</a>
         <a href="index.html" class="nav-cta">← Back to Home</a>
       </div>
     </div>
@@ -380,7 +380,7 @@
         </div>
       </div>
       <div class="foot-links">
-        <a href="https://github.com/0xbeni/xpact" target="_blank">GitHub</a>
+        <a href="https://github.com/Benita2001/xPact" target="_blank">GitHub</a>
         <a href="https://www.oklink.com/xlayer-test" target="_blank">X Layer Explorer</a>
         <a href="https://twitter.com/0xbeni" target="_blank">@0xbeni</a>
       </div>
@@ -392,7 +392,7 @@
 <script>
   const RPC_URL     = 'https://testrpc.xlayer.tech/terigon';
   const HOOK_ADDR   = '0x88cd934A339d4fe0f2408D60aA540BA8559910C0';
-  const SCAN_BLOCKS = 10000;
+  const SCAN_BLOCKS = 100;
 
   const HOOK_ABI = [
     'event PactCreated(bytes32 indexed id, address indexed agentA, uint256 payment, address paymentToken, uint256 deadline)',
@@ -445,8 +445,8 @@
     if (!pacts.length) {
       return `<div class="state-box">
         <div class="state-icon">📭</div>
-        <div class="state-text">No pacts found yet.</div>
-        <div class="state-sub">Be the first to create one.</div>
+        <div class="state-text">No pacts found in last 100 blocks.</div>
+        <div class="state-sub">The hook is deployed and ready.</div>
       </div>`;
     }
     const rows = pacts.map(p => {
@@ -680,7 +680,7 @@
 
     } catch (err) {
       console.error('RPC error:', err);
-      showError(['pacts-container','feed-container','lb-container'], err.message);
+      showError(['pacts-container','feed-container','lb-container'], 'Could not connect to X Layer testnet. Retrying in 30s...');
     } finally {
       loading = false;
       btn.classList.remove('spinning');
