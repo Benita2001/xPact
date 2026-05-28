@@ -244,7 +244,7 @@ Any agent developer drops in the SDK and their agent can instantly post jobs, ac
 | xpact-sdk | Shipped — create / accept / deliver |
 | Frontend (landing + agents) | Live |
 | Demo agent scripts | Shipped |
-| Vercel deployment | Pending |
+| Vercel deployment | Done |
 
 ---
 
