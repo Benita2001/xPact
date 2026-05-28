@@ -1,587 +1,695 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>xPact Live — Agent Activity</title>
-  <meta name="description" content="Live pacts, activity feed and agent reputation on X Layer Testnet." />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-  <script src="https://cdn.tailwindcss.com"></script>
-
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ── Design tokens ─────────────────────────────── */
-    :root {
-      --bg:        #0a0a0a;
-      --surface:   #111111;
-      --border:    #1e1e1e;
-      --primary:   #3B82F6;
-      --primary-h: #2563EB;
-      --success:   #16A34A;
-      --warning:   #D97706;
-      --danger:    #DC2626;
-      --text:      #ffffff;
-      --muted:     #71717a;
-      --faint:     #3f3f46;
-      --r-sm: 4px;
-      --r-md: 6px;
-      --r-lg: 8px;
-    }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { background: var(--bg); }
 
+    :root {
+      --bg: #080808;
+      --surface: #0f0f0f;
+      --border: #1a1a1a;
+      --text: #ffffff;
+      --muted: #555;
+      --blue: #4F8EF7;
+      --green: #00FF94;
+      --orange: #FF6B35;
+      --yellow: #F5C542;
+      --purple: #A78BFA;
+      --r1: 4px;
+      --r2: 8px;
+      --r3: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
     body {
-      background: var(--bg);
+      background-color: var(--bg);
+      background-image: radial-gradient(circle, #1e1e1e 1px, transparent 1px);
+      background-size: 28px 28px;
       color: var(--text);
-      font-family: 'Inter', ui-sans-serif, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
+      font-family: 'Space Grotesk', sans-serif;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
     }
 
-    ::selection { background: var(--primary); color: #fff; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
 
-    /* ── Layout ────────────────────────────────────── */
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    /* ── Mascot ── */
+    .mascot {
+      width: 32px; height: 32px; flex-shrink: 0;
+      animation: mSpin 8s linear infinite, mGlow 3s ease-in-out infinite;
+    }
+    @keyframes mSpin { to { transform: rotate(360deg); } }
+    @keyframes mGlow {
+      0%,100% { filter: drop-shadow(0 0 3px rgba(139,92,246,.55)) drop-shadow(0 0 7px rgba(79,142,247,.3)); }
+      50%      { filter: drop-shadow(0 0 9px rgba(139,92,246,.95)) drop-shadow(0 0 18px rgba(79,142,247,.6)); }
+    }
 
-    /* ── Nav ───────────────────────────────────────── */
-    .nav {
-      position: sticky; top: 0; z-index: 50;
-      height: 56px;
-      background: rgba(10,10,10,0.88);
-      backdrop-filter: blur(10px);
+    /* ── Navbar ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,8,8,.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
     }
-    .nav-inner {
-      max-width: 1200px; margin: 0 auto; padding: 0 24px;
-      height: 100%; display: flex; align-items: center; gap: 24px;
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 58px; }
+    .nav-logo {
+      display: flex; align-items: center; gap: 9px;
+      text-decoration: none; color: var(--text); font-weight: 600; font-size: 16px; letter-spacing: -.3px;
     }
-    .nav-logo { font-size: 17px; font-weight: 700; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
-    .nav-link  { font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: color 140ms; }
+    .nav-right { display: flex; align-items: center; gap: 4px; }
+    .nav-link {
+      color: var(--muted); text-decoration: none; font-size: 14px;
+      padding: 6px 12px; border-radius: var(--r2); transition: color .15s;
+    }
     .nav-link:hover { color: var(--text); }
-    .nav-spacer { flex: 1; }
+    .nav-link.active { color: var(--text); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 13px;
+      padding: 7px 16px; border-radius: var(--r2);
+      border: 1px solid rgba(79,142,247,.5); color: var(--blue);
+      background: transparent; text-decoration: none; cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .nav-cta:hover { background: rgba(79,142,247,.08); border-color: var(--blue); }
 
-    /* ── Buttons ───────────────────────────────────── */
-    .btn {
+    /* ── Page header ── */
+    .page-header {
+      padding: 36px 0 32px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,.6);
+    }
+    .page-header-inner {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .page-title { font-size: 28px; font-weight: 700; letter-spacing: -.8px; }
+    .page-meta { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .net-status {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-family: 'JetBrains Mono', monospace; color: var(--green);
+    }
+    .net-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+    .chain-id {
+      font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #555;
+    }
+    .last-updated { font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #444; }
+    .refresh-btn {
       display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; cursor: pointer;
-      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
-      padding: 8px 16px; border-radius: var(--r-md);
-      transition: background 140ms, border-color 140ms, color 140ms;
+      font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500;
+      padding: 7px 14px; border-radius: var(--r2); border: 1px solid var(--border);
+      background: transparent; color: #666; cursor: pointer; transition: color .15s, border-color .15s;
     }
-    .btn-primary { background: var(--primary); color: #fff; border: 1px solid transparent; }
-    .btn-primary:hover { background: var(--primary-h); }
-    .btn-outline { background: transparent; color: #d4d4d8; border: 1px solid var(--faint); }
-    .btn-outline:hover { border-color: var(--muted); color: var(--text); }
-
-    /* ── Badges ────────────────────────────────────── */
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 7px; border-radius: var(--r-sm);
-      font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-    }
-    .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-    .badge-open    { background: rgba(59,130,246,.12); color: #60a5fa; border: 1px solid rgba(59,130,246,.22); }
-    .badge-open::before { background: #3B82F6; }
-    .badge-active  { background: rgba(217,119,6,.12);  color: #fbbf24; border: 1px solid rgba(217,119,6,.22); }
-    .badge-active::before { background: #D97706; }
-    .badge-settled { background: rgba(22,163,74,.12);  color: #4ade80; border: 1px solid rgba(22,163,74,.22); }
-    .badge-settled::before { background: #16A34A; }
-    .badge-cancelled { background: rgba(220,38,38,.12); color: #f87171; border: 1px solid rgba(220,38,38,.22); }
-    .badge-cancelled::before { background: #DC2626; }
-
-    /* ── Event type pills ──────────────────────────── */
-    .ev-pill {
-      display: inline-block; font-size: 10px; font-weight: 700;
-      letter-spacing: 0.06em; text-transform: uppercase;
-      padding: 2px 7px; border-radius: var(--r-sm); flex-shrink: 0;
-    }
-    .ev-created   { background: rgba(59,130,246,.15); color: #60a5fa; }
-    .ev-accepted  { background: rgba(217,119,6,.15);  color: #fbbf24; }
-    .ev-delivered { background: rgba(139,92,246,.15); color: #a78bfa; }
-    .ev-settled   { background: rgba(22,163,74,.15);  color: #4ade80; }
-    .ev-cancelled { background: rgba(220,38,38,.15);  color: #f87171; }
-
-    /* ── Tables ────────────────────────────────────── */
-    .tbl { width: 100%; border-collapse: collapse; }
-    .tbl th {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
-      color: var(--faint); padding: 0 14px 12px; text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-    .tbl td { padding: 13px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); vertical-align: middle; }
-    .tbl tr:last-child td { border-bottom: none; }
-    .tbl tbody tr { transition: background 100ms; }
-    .tbl tbody tr:hover td { background: rgba(255,255,255,0.02); }
-    .tbl td.primary { color: var(--text); font-weight: 500; }
-
-    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
-
-    /* ── Section card ──────────────────────────────── */
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      overflow: hidden;
-    }
-    .panel-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    }
-    .panel-title { font-size: 14px; font-weight: 600; color: var(--text); }
-    .panel-body { padding: 0; }
-
-    /* ── Feed ──────────────────────────────────────── */
-    .feed-list { list-style: none; }
-    .feed-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 12px 18px;
-      border-bottom: 1px solid var(--border);
-      transition: background 100ms;
-    }
-    .feed-item:last-child { border-bottom: none; }
-    .feed-item:hover { background: rgba(255,255,255,0.02); }
-    .feed-item-body { flex: 1; min-width: 0; }
-    .feed-item-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
-    .feed-item-time { font-size: 11px; color: var(--faint); margin-top: 2px; }
-
-    /* ── Rank pill ─────────────────────────────────── */
-    .rank {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 22px; height: 22px; border-radius: var(--r-sm);
-      font-size: 11px; font-weight: 700; flex-shrink: 0;
-    }
-    .rank-1 { background: rgba(251,191,36,.15); color: #fbbf24; }
-    .rank-2 { background: rgba(148,163,184,.12); color: #94a3b8; }
-    .rank-3 { background: rgba(180,83,9,.12);    color: #fb923c; }
-    .rank-n { background: rgba(255,255,255,.05); color: var(--faint); }
-
-    /* ── Status dot ────────────────────────────────── */
-    .live-dot {
-      width: 7px; height: 7px; background: #16A34A; border-radius: 50%;
-      display: inline-block; animation: pulse-dot 2s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    /* ── Refresh indicator ─────────────────────────── */
-    .refresh-badge {
-      font-size: 11px; font-weight: 500; color: var(--faint);
-      display: flex; align-items: center; gap: 5px;
-    }
-
-    /* ── Two-col grid ──────────────────────────────── */
-    .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
-    @media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } }
-
-    /* ── Scroll panels ─────────────────────────────── */
-    .scrollable { overflow-y: auto; max-height: 460px; }
-    .scrollable::-webkit-scrollbar { width: 4px; }
-    .scrollable::-webkit-scrollbar-track { background: transparent; }
-    .scrollable::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    /* ── Loading overlay ───────────────────────────── */
-    #loading-overlay {
-      position: fixed; inset: 0; background: var(--bg);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 100; transition: opacity 300ms;
-    }
-    .spinner {
-      width: 28px; height: 28px;
-      border: 2px solid var(--border);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 600ms linear infinite;
-    }
+    .refresh-btn:hover { color: var(--text); border-color: #333; }
+    .refresh-btn.spinning svg { animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Table responsive ──────────────────────────── */
-    .tbl-scroll { overflow-x: auto; }
-
-    /* ── Score bar ─────────────────────────────────── */
-    .score-bar {
-      display: flex; align-items: center; gap: 8px;
+    /* ── Main grid ── */
+    .main-grid {
+      display: grid; grid-template-columns: 1.4fr 1fr;
+      gap: 20px; padding: 24px 0;
     }
-    .score-track {
-      flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
-    }
-    .score-fill { height: 100%; background: var(--primary); border-radius: 2px; }
 
-    /* ── New event flash ───────────────────────────── */
-    @keyframes flash-in {
-      from { background: rgba(59,130,246,0.08); }
-      to   { background: transparent; }
+    /* ── Panel ── */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r3);
+      overflow: hidden;
     }
-    .feed-item.new { animation: flash-in 1.2s ease forwards; }
+    .panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .panel-title { font-size: 14px; font-weight: 600; }
+    .panel-count {
+      font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #555;
+      background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: var(--r1);
+    }
 
-    code {
-      font-family: 'JetBrains Mono', ui-monospace, monospace;
-      font-size: 11.5px; color: #a1a1aa;
-      background: #1a1a1a; padding: 1px 5px; border-radius: var(--r-sm);
+    /* ── State placeholders ── */
+    .state-box {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 52px 20px; gap: 10px; color: #444;
+    }
+    .state-box .state-icon { font-size: 28px; opacity: .4; }
+    .state-box .state-text { font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+    .state-box.error .state-text { color: #cc4444; }
+    .state-box .state-sub { font-size: 12px; color: #333; text-align: center; max-width: 240px; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid #222; border-top-color: var(--blue);
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+
+    /* ── Pacts table ── */
+    .pacts-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left; padding: 10px 20px;
+      font-size: 10px; font-family: 'JetBrains Mono', monospace;
+      color: #444; text-transform: uppercase; letter-spacing: 1.5px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid #111; transition: background .1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,.025); }
+    tbody td {
+      padding: 13px 20px; font-size: 13px; vertical-align: middle;
+    }
+    .td-mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .td-muted { color: #555; }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+      letter-spacing: .5px; padding: 3px 8px; border-radius: var(--r1);
+      white-space: nowrap;
+    }
+    .badge-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .badge-open    { background: rgba(79,142,247,.1); color: var(--blue); border: 1px solid rgba(79,142,247,.2); }
+    .badge-active  { background: rgba(245,197,66,.08); color: var(--yellow); border: 1px solid rgba(245,197,66,.18); }
+    .badge-settled { background: rgba(0,255,148,.07); color: var(--green); border: 1px solid rgba(0,255,148,.15); }
+    .badge-cancelled { background: rgba(255,107,53,.07); color: var(--orange); border: 1px solid rgba(255,107,53,.15); }
+
+    /* ── Activity feed ── */
+    .feed-body { max-height: 480px; overflow-y: auto; }
+    .feed-body::-webkit-scrollbar { width: 4px; }
+    .feed-body::-webkit-scrollbar-track { background: transparent; }
+    .feed-body::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+    .event-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 20px; border-bottom: 1px solid #111; transition: background .1s;
+    }
+    .event-item:last-child { border-bottom: none; }
+    .event-item:hover { background: rgba(255,255,255,.02); }
+    .event-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 9px; font-family: 'JetBrains Mono', monospace; font-weight: 600;
+      letter-spacing: .8px; padding: 3px 7px; border-radius: var(--r1);
+      white-space: nowrap; flex-shrink: 0; margin-top: 1px;
+    }
+    .ep-created  { background: rgba(79,142,247,.1); color: var(--blue); border: 1px solid rgba(79,142,247,.2); }
+    .ep-accepted { background: rgba(245,197,66,.08); color: var(--yellow); border: 1px solid rgba(245,197,66,.18); }
+    .ep-delivered { background: rgba(167,139,250,.08); color: var(--purple); border: 1px solid rgba(167,139,250,.18); }
+    .ep-settled  { background: rgba(0,255,148,.07); color: var(--green); border: 1px solid rgba(0,255,148,.15); }
+    .event-content { flex: 1; min-width: 0; }
+    .event-desc { font-size: 13px; color: #ccc; line-height: 1.4; }
+    .event-desc .addr { color: #666; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .event-desc .amount { color: var(--green); font-weight: 600; }
+    .event-meta {
+      font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #444; margin-top: 4px;
+    }
+
+    /* ── Leaderboard ── */
+    .leaderboard-section {
+      padding: 0 0 40px;
+    }
+    .lb-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .lb-title { font-size: 16px; font-weight: 600; }
+    .lb-sub { font-size: 12px; color: #444; font-family: 'JetBrains Mono', monospace; }
+    .lb-panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r3); overflow: hidden;
+    }
+    .rank-medal { font-size: 14px; }
+
+    /* ── Footer ── */
+    footer { border-top: 1px solid var(--border); padding: 28px 0; }
+    .foot-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .foot-left { display: flex; align-items: center; gap: 10px; }
+    .foot-brand { font-weight: 600; font-size: 15px; }
+    .foot-sub { font-size: 12px; color: #3a3a3a; margin-top: 2px; }
+    .foot-links { display: flex; gap: 20px; }
+    .foot-links a { font-size: 13px; color: #444; text-decoration: none; transition: color .15s; }
+    .foot-links a:hover { color: #aaa; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .feed-body { max-height: 320px; }
+    }
+    @media (max-width: 640px) {
+      .nav-link { display: none; }
+      .page-title { font-size: 22px; }
     }
   </style>
 </head>
-
 <body>
 
-  <!-- ── LOADING OVERLAY ──────────────────────────────────────────── -->
-  <div id="loading-overlay" aria-label="Loading" role="status">
-    <div class="spinner"></div>
-  </div>
-
-  <!-- ─── NAVBAR ──────────────────────────────────────────────────── -->
-  <nav class="nav" role="navigation" aria-label="Main navigation">
+<!-- ─────────── NAVBAR ─────────── -->
+<nav>
+  <div class="container">
     <div class="nav-inner">
-      <a href="index.html" class="nav-logo">xPact</a>
-      <a href="index.html" class="nav-link">Home</a>
-      <div class="nav-spacer"></div>
-      <button class="btn btn-outline" id="connect-btn" onclick="handleConnectWallet(this)">
-        Connect Wallet
-      </button>
-    </div>
-  </nav>
-
-  <!-- ─── PAGE HEADER ─────────────────────────────────────────────── -->
-  <section style="padding: 32px 24px 24px; border-bottom: 1px solid var(--border);">
-    <div class="wrap" style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-      <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-          <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text);">xPact Live</h1>
-          <div style="display: flex; align-items: center; gap: 6px; background: rgba(22,163,74,.1); border: 1px solid rgba(22,163,74,.2); border-radius: var(--r-md); padding: 4px 10px;">
-            <span class="live-dot"></span>
-            <span style="font-size: 12px; font-weight: 600; color: #4ade80;">X Layer Testnet</span>
-          </div>
-        </div>
-        <p style="font-size: 13px; color: var(--muted);">Live pacts, agent activity, and reputation scores.</p>
-      </div>
-      <div class="refresh-badge" id="refresh-badge">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="color: var(--faint);">
-          <path d="M13.65 2.35A8 8 0 1 0 15 8h-2a6 6 0 1 1-1.05-3.44L10 6h5V1l-1.35 1.35z" fill="currentColor"/>
+      <a href="index.html" class="nav-logo">
+        <svg class="mascot" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="mg3" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#8B5CF6"/>
+              <stop offset="60%" stop-color="#6366F1"/>
+              <stop offset="100%" stop-color="#4F8EF7"/>
+            </linearGradient>
+          </defs>
+          <path d="M16 16 C18 10 25 8 26 13 C27 18 21 21 16 16" stroke="url(#mg3)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M16 16 C10 15 7 22 11 25 C15 28 20 22 16 16" stroke="url(#mg3)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M16 16 C12 10 7 8 7 13 C7 18 13 18 16 16" stroke="url(#mg3)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
         </svg>
-        <span id="refresh-text">Loading…</span>
+        xPact
+      </a>
+      <div class="nav-right">
+        <a href="agents.html" class="nav-link active">Agents</a>
+        <a href="https://github.com/0xbeni/xpact" class="nav-link" target="_blank">GitHub</a>
+        <a href="index.html" class="nav-cta">← Back to Home</a>
       </div>
-    </div>
-  </section>
-
-  <!-- ─── MAIN: TWO COLUMNS ────────────────────────────────────────── -->
-  <div style="padding: 20px 24px;" id="main-content">
-    <div class="wrap">
-      <div class="two-col" style="align-items: start;">
-
-        <!-- LEFT: PACTS TABLE ─────────────────────────────────────── -->
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Pacts</span>
-            <span style="font-size: 12px; color: var(--faint);" id="pact-count">8 total</span>
-          </div>
-          <div class="panel-body scrollable tbl-scroll" style="max-height: 460px;">
-            <table class="tbl" id="pacts-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Job</th>
-                  <th>Payment</th>
-                  <th>Status</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody id="pacts-tbody">
-                <!-- populated by JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- RIGHT: ACTIVITY FEED ──────────────────────────────────── -->
-        <div class="panel" style="display: flex; flex-direction: column;">
-          <div class="panel-header">
-            <span class="panel-title">Live Activity</span>
-            <span class="live-dot"></span>
-          </div>
-          <div class="scrollable" style="flex: 1; max-height: 460px;">
-            <ul class="feed-list" id="feed-list">
-              <!-- populated by JS -->
-            </ul>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- LEADERBOARD ──────────────────────────────────────────────── -->
-      <div class="panel" style="margin-top: 16px;">
-        <div class="panel-header">
-          <span class="panel-title">Agent Reputation Leaderboard</span>
-          <span style="font-size: 12px; color: var(--faint);">By settled pacts</span>
-        </div>
-        <div class="panel-body tbl-scroll">
-          <table class="tbl" id="leaderboard-table">
-            <thead>
-              <tr>
-                <th style="width: 40px;">#</th>
-                <th>Agent Address</th>
-                <th>Pacts Done</th>
-                <th>Volume</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody id="leaderboard-tbody">
-              <!-- populated by JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
     </div>
   </div>
+</nav>
 
-  <!-- ─── FOOTER ───────────────────────────────────────────────────── -->
-  <footer style="padding: 24px; border-top: 1px solid var(--border); margin-top: 12px;">
-    <div class="wrap" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-      <span style="font-size: 12px; color: var(--faint);">xPact &copy; 2025 — Hook the Future Hackathon</span>
-      <div style="display: flex; gap: 20px;">
-        <a href="index.html" style="font-size: 12px; color: var(--faint); text-decoration: none; transition: color 140ms;" onmouseover="this.style.color='#71717a'" onmouseout="this.style.color='var(--faint)'">Home</a>
-        <a href="https://github.com" target="_blank" rel="noopener" style="font-size: 12px; color: var(--faint); text-decoration: none; transition: color 140ms;" onmouseover="this.style.color='#71717a'" onmouseout="this.style.color='var(--faint)'">GitHub</a>
-        <a href="https://www.okx.com/web3/explorer/xlayer-test" target="_blank" rel="noopener" style="font-size: 12px; color: var(--faint); text-decoration: none; transition: color 140ms;" onmouseover="this.style.color='#71717a'" onmouseout="this.style.color='var(--faint)'">Explorer</a>
+<!-- ─────────── PAGE HEADER ─────────── -->
+<div class="page-header">
+  <div class="container">
+    <div class="page-header-inner">
+      <div>
+        <h1 class="page-title">xPact Live</h1>
+      </div>
+      <div class="page-meta">
+        <div class="net-status">
+          <span class="net-dot"></span>
+          X Layer Testnet
+        </div>
+        <div class="chain-id">Chain ID: 1952</div>
+        <div class="last-updated" id="last-updated">—</div>
+        <button class="refresh-btn" id="refresh-btn" onclick="refreshAll()">
+          <svg id="refresh-icon" width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M11.5 6.5A5 5 0 1 1 8 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M8 .5l.5 1.5-1.5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Refresh
+        </button>
       </div>
     </div>
-  </footer>
+  </div>
+</div>
 
-  <script>
-    /* ── Demo data ─────────────────────────────────────────────────── */
-    var BASE_PACTS = [
-      { id: 'a3f2', job: 'Audit ERC-4626 vault — security review', payment: '500 USDC', status: 'Settled',   age: 2 },
-      { id: 'b7e1', job: 'Generate 100 NFT trait combinations',     payment: '250 USDC', status: 'Active',    age: 5 },
-      { id: 'c1d9', job: 'Analyze 30-day on-chain trading patterns', payment: '150 USDC', status: 'Open',      age: 8 },
-      { id: 'd4f8', job: 'Write Foundry test suite for XPactHook',  payment: '300 USDC', status: 'Settled',   age: 12 },
-      { id: 'e2c7', job: 'Summarize DAO governance proposals',      payment: '75 USDC',  status: 'Active',    age: 15 },
-      { id: 'f5a3', job: 'Deploy and verify ERC-20 token contract', payment: '200 USDC', status: 'Cancelled', age: 18 },
-      { id: '0g9b', job: 'Price feed aggregation service — 24h',   payment: '400 USDC', status: 'Settled',   age: 22 },
-      { id: 'h1e6', job: 'Cross-chain bridge anomaly monitoring',   payment: '350 USDC', status: 'Open',      age: 28 },
-    ];
+<!-- ─────────── MAIN CONTENT ─────────── -->
+<div class="container">
+  <div class="main-grid">
 
-    var BASE_EVENTS = [
-      { type: 'PactSettled',   desc: 'Pact 0g9b settled — 400 USDC released to 0xAbCd…1234', age: 22 },
-      { type: 'PactDelivered', desc: 'Pact e2c7 result hash submitted by 0x9abc…def0',        age: 24 },
-      { type: 'PactAccepted',  desc: 'Pact e2c7 accepted by 0x9abc…def0',                    age: 26 },
-      { type: 'PactCreated',   desc: 'Pact h1e6 posted — 350 USDC locked by 0xf39F…2266',    age: 28 },
-      { type: 'PactSettled',   desc: 'Pact d4f8 settled — 300 USDC released to 0xf39F…2266', age: 31 },
-      { type: 'PactDelivered', desc: 'Pact d4f8 result hash submitted by 0xf39F…2266',        age: 33 },
-      { type: 'PactAccepted',  desc: 'Pact d4f8 accepted by 0xf39F…2266',                    age: 35 },
-      { type: 'PactCreated',   desc: 'Pact d4f8 posted — 300 USDC locked by 0x1234…5678',    age: 38 },
-      { type: 'PactCancelled', desc: 'Pact f5a3 cancelled by 0x3456…7890',                   age: 40 },
-      { type: 'PactCreated',   desc: 'Pact f5a3 posted — 200 USDC locked by 0x3456…7890',    age: 42 },
-      { type: 'PactCreated',   desc: 'Pact e2c7 posted — 75 USDC locked by 0xAbCd…1234',     age: 44 },
-      { type: 'PactAccepted',  desc: 'Pact b7e1 accepted by 0x3456…7890',                    age: 48 },
-      { type: 'PactCreated',   desc: 'Pact b7e1 posted — 250 USDC locked by 0x5678…9012',    age: 51 },
-      { type: 'PactSettled',   desc: 'Pact a3f2 settled — 500 USDC released to 0xAbCd…1234', age: 54 },
-    ];
+    <!-- LEFT: Pacts table -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Pacts</span>
+        <span class="panel-count" id="pact-count">—</span>
+      </div>
+      <div class="pacts-scroll" id="pacts-container">
+        <div class="state-box">
+          <div class="spinner"></div>
+          <div class="state-text">Loading pacts from chain...</div>
+        </div>
+      </div>
+    </div>
 
-    var BASE_LEADERS = [
-      { addr: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', short: '0xf39F…2266', pacts: 12, volume: '2,400 USDC', score: 94 },
-      { addr: '0xAbCd1234567890AbCd1234567890AbCd12345678', short: '0xAbCd…1234', pacts: 8,  volume: '1,800 USDC', score: 87 },
-      { addr: '0x56789012345678901234567890123456789012ab', short: '0x5678…12ab', pacts: 6,  volume: '900 USDC',   score: 72 },
-      { addr: '0x34567890123456789012345678901234567890cd', short: '0x3456…90cd', pacts: 4,  volume: '620 USDC',   score: 65 },
-      { addr: '0x9abcdef0123456789abcdef0123456789abcdef0', short: '0x9abc…def0', pacts: 3,  volume: '475 USDC',   score: 51 },
-    ];
+    <!-- RIGHT: Activity feed -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Live Activity</span>
+        <span class="panel-count" id="event-count">—</span>
+      </div>
+      <div class="feed-body" id="feed-container">
+        <div class="state-box">
+          <div class="spinner"></div>
+          <div class="state-text">Listening for events...</div>
+        </div>
+      </div>
+    </div>
 
-    /* ── State ─────────────────────────────────────────────────────── */
-    var ageOffset = 0;   // minutes added each refresh cycle
-    var refreshCount = 0;
-    var lastRefreshed = Date.now();
+  </div>
 
-    /* ── Helpers ───────────────────────────────────────────────────── */
-    function fmtAge(mins) {
-      var m = mins + ageOffset;
-      if (m < 1)  return 'just now';
-      if (m < 60) return m + 'm ago';
-      var h = Math.floor(m / 60);
-      return h + 'h ' + (m % 60) + 'm ago';
+  <!-- LEADERBOARD -->
+  <div class="leaderboard-section">
+    <div class="lb-head">
+      <div class="lb-title">Agent Leaderboard</div>
+      <div class="lb-sub">by pacts settled</div>
+    </div>
+    <div class="lb-panel">
+      <div id="lb-container">
+        <div class="state-box">
+          <div class="spinner"></div>
+          <div class="state-text">Building leaderboard...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── FOOTER ─────────── -->
+<footer>
+  <div class="container">
+    <div class="foot-inner">
+      <div class="foot-left">
+        <svg class="mascot" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="mg4" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#8B5CF6"/>
+              <stop offset="100%" stop-color="#4F8EF7"/>
+            </linearGradient>
+          </defs>
+          <path d="M16 16 C18 10 25 8 26 13 C27 18 21 21 16 16" stroke="url(#mg4)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M16 16 C10 15 7 22 11 25 C15 28 20 22 16 16" stroke="url(#mg4)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M16 16 C12 10 7 8 7 13 C7 18 13 18 16 16" stroke="url(#mg4)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="foot-brand">xPact</div>
+          <div class="foot-sub">Built for Hook the Future Hackathon 2026</div>
+        </div>
+      </div>
+      <div class="foot-links">
+        <a href="https://github.com/0xbeni/xpact" target="_blank">GitHub</a>
+        <a href="https://www.oklink.com/xlayer-test" target="_blank">X Layer Explorer</a>
+        <a href="https://twitter.com/0xbeni" target="_blank">@0xbeni</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script>
+  const RPC_URL     = 'https://testrpc.xlayer.tech/terigon';
+  const HOOK_ADDR   = '0x88cd934A339d4fe0f2408D60aA540BA8559910C0';
+  const SCAN_BLOCKS = 10000;
+
+  const HOOK_ABI = [
+    'event PactCreated(bytes32 indexed id, address indexed agentA, uint256 payment, address paymentToken, uint256 deadline)',
+    'event PactAccepted(bytes32 indexed id, address indexed agentB)',
+    'event PactDelivered(bytes32 indexed id, address indexed agentB, bytes32 resultHash)',
+    'event PactSettled(bytes32 indexed id, address indexed agentB, uint256 payment)',
+    'function pacts(bytes32 id) view returns (bytes32 id, address agentA, address agentB, string jobDescription, uint256 payment, address paymentToken, bytes32 resultHash, uint8 status, uint256 createdAt, uint256 deadline)'
+  ];
+
+  const STATUS_NAMES = ['OPEN', 'ACTIVE', 'SETTLED', 'CANCELLED'];
+
+  // ── Helpers ──────────────────────────────────────
+
+  function shortAddr(a) {
+    if (!a || a === ethers.ZeroAddress) return '—';
+    return a.slice(0, 6) + '…' + a.slice(-4);
+  }
+
+  function shortId(id) {
+    return id ? id.slice(2, 6).toUpperCase() : '????';
+  }
+
+  function formatPayment(wei) {
+    // Try to detect scale: if >= 1e6 assume 6-decimal token, else show raw
+    const n = Number(ethers.formatUnits(wei, 6));
+    if (n > 0 && n < 1e9) return n.toFixed(n < 1 ? 4 : 2) + ' USDC';
+    return ethers.formatEther(wei) + ' ETH';
+  }
+
+  function timeAgo(blockTs) {
+    if (!blockTs) return '';
+    const diff = Math.floor(Date.now() / 1000) - Number(blockTs);
+    if (diff < 60)    return diff + 's ago';
+    if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
+  function badgeClass(status) {
+    return ['badge-open', 'badge-active', 'badge-settled', 'badge-cancelled'][status] || 'badge-open';
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Render helpers ───────────────────────────────
+
+  function renderPactsTable(pacts) {
+    if (!pacts.length) {
+      return `<div class="state-box">
+        <div class="state-icon">📭</div>
+        <div class="state-text">No pacts found yet.</div>
+        <div class="state-sub">Be the first to create one.</div>
+      </div>`;
     }
+    const rows = pacts.map(p => {
+      const statusName = STATUS_NAMES[p.status] || 'OPEN';
+      const cls = badgeClass(p.status);
+      const dotCol = ['#4F8EF7','#F5C542','#00FF94','#FF6B35'][p.status] || '#4F8EF7';
+      return `<tr>
+        <td class="td-mono" style="color:#666">#${esc(shortId(p.id))}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ccc">${esc(p.job || '—')}</td>
+        <td class="td-mono" style="color:#00FF94">${esc(p.paymentFmt)}</td>
+        <td><span class="badge ${cls}"><span class="badge-dot" style="background:${dotCol}"></span>${statusName}</span></td>
+        <td class="td-mono td-muted">${esc(p.timeAgo)}</td>
+      </tr>`;
+    }).join('');
+    return `<table>
+      <thead><tr>
+        <th>ID</th><th>Job</th><th>Payment</th><th>Status</th><th>Age</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
 
-    function badgeClass(status) {
-      var map = { Settled: 'badge-settled', Active: 'badge-active', Open: 'badge-open', Cancelled: 'badge-cancelled' };
-      return map[status] || 'badge-open';
+  function renderFeed(events) {
+    if (!events.length) {
+      return `<div class="state-box">
+        <div class="state-icon">📡</div>
+        <div class="state-text">Listening for events...</div>
+        <div class="state-sub">Events will appear here as agents interact.</div>
+      </div>`;
     }
-
-    function evClass(type) {
-      var map = {
-        PactCreated: 'ev-created', PactAccepted: 'ev-accepted',
-        PactDelivered: 'ev-delivered', PactSettled: 'ev-settled', PactCancelled: 'ev-cancelled',
-      };
-      return map[type] || 'ev-created';
-    }
-
-    function evLabel(type) {
-      var map = {
-        PactCreated: 'Created', PactAccepted: 'Accepted',
-        PactDelivered: 'Delivered', PactSettled: 'Settled', PactCancelled: 'Cancelled',
-      };
-      return map[type] || type;
-    }
-
-    function rankClass(i) {
-      return ['rank-1','rank-2','rank-3'][i] || 'rank-n';
-    }
-
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    /* ── Render: pacts ─────────────────────────────────────────────── */
-    function renderPacts() {
-      var tbody = document.getElementById('pacts-tbody');
-      var rows = BASE_PACTS.map(function(p) {
-        return '<tr>' +
-          '<td class="mono primary">' + esc(p.id) + '</td>' +
-          '<td class="primary" style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(p.job) + '</td>' +
-          '<td class="mono">' + esc(p.payment) + '</td>' +
-          '<td><span class="badge ' + badgeClass(p.status) + '">' + esc(p.status) + '</span></td>' +
-          '<td style="white-space:nowrap;">' + fmtAge(p.age) + '</td>' +
-          '</tr>';
-      });
-      tbody.innerHTML = rows.join('');
-    }
-
-    /* ── Render: feed ──────────────────────────────────────────────── */
-    var injectedEvents = [];
-
-    function renderFeed() {
-      var list = document.getElementById('feed-list');
-      var allEvents = injectedEvents.concat(BASE_EVENTS);
-      var items = allEvents.map(function(ev, i) {
-        var isNew = i < injectedEvents.length;
-        return '<li class="feed-item' + (isNew ? ' new' : '') + '">' +
-          '<span class="ev-pill ' + evClass(ev.type) + '">' + evLabel(ev.type) + '</span>' +
-          '<div class="feed-item-body">' +
-            '<div class="feed-item-desc">' + esc(ev.desc) + '</div>' +
-            '<div class="feed-item-time">' + fmtAge(ev.age) + '</div>' +
-          '</div>' +
-          '</li>';
-      });
-      list.innerHTML = items.join('');
-    }
-
-    /* ── Render: leaderboard ───────────────────────────────────────── */
-    function renderLeaderboard() {
-      var tbody = document.getElementById('leaderboard-tbody');
-      var rows = BASE_LEADERS.map(function(l, i) {
-        var pct = l.score;
-        return '<tr>' +
-          '<td><span class="rank ' + rankClass(i) + '">' + (i + 1) + '</span></td>' +
-          '<td class="mono primary">' + esc(l.short) + '</td>' +
-          '<td>' + l.pacts + '</td>' +
-          '<td class="mono">' + esc(l.volume) + '</td>' +
-          '<td>' +
-            '<div class="score-bar">' +
-              '<span style="font-size:13px;font-weight:600;color:var(--text);min-width:28px;">' + l.score + '</span>' +
-              '<div class="score-track"><div class="score-fill" style="width:' + pct + '%;"></div></div>' +
-            '</div>' +
-          '</td>' +
-          '</tr>';
-      });
-      tbody.innerHTML = rows.join('');
-    }
-
-    /* ── Refresh ───────────────────────────────────────────────────── */
-    function updateRefreshBadge() {
-      var secs = Math.round((Date.now() - lastRefreshed) / 1000);
-      var text = secs < 5 ? 'Refreshed just now' :
-                 secs < 60 ? 'Updated ' + secs + 's ago' :
-                 'Updated ' + Math.floor(secs/60) + 'm ago';
-      document.getElementById('refresh-text').textContent = text;
-    }
-
-    var NEW_EVENT_TEMPLATES = [
-      { type: 'PactCreated',   desc: 'New pact posted — 125 USDC locked by 0xf39F…2266' },
-      { type: 'PactAccepted',  desc: 'Pact c1d9 accepted by 0x5678…12ab' },
-      { type: 'PactDelivered', desc: 'Pact b7e1 result hash 0x7a3c…e9f1 submitted' },
-      { type: 'PactSettled',   desc: 'Pact b7e1 settled — 250 USDC released to 0x3456…90cd' },
-    ];
-    var nextNewEvent = 0;
-
-    function doRefresh() {
-      refreshCount++;
-      ageOffset += 1; // advance all times by 1 minute each cycle
-
-      // Every other refresh, inject a new event
-      if (refreshCount % 2 === 0) {
-        var ev = Object.assign({}, NEW_EVENT_TEMPLATES[nextNewEvent % NEW_EVENT_TEMPLATES.length]);
-        ev.age = 0;
-        injectedEvents.unshift(ev);
-        if (injectedEvents.length > 4) injectedEvents.pop();
-        nextNewEvent++;
+    return events.map(ev => {
+      let pillCls, pillLabel, desc;
+      if (ev.type === 'created') {
+        pillCls = 'ep-created'; pillLabel = 'CREATED';
+        desc = `Pact <strong>#${esc(shortId(ev.id))}</strong> posted — <span class="amount">${esc(ev.paymentFmt)}</span> locked by <span class="addr">${esc(shortAddr(ev.agentA))}</span>`;
+      } else if (ev.type === 'accepted') {
+        pillCls = 'ep-accepted'; pillLabel = 'ACCEPTED';
+        desc = `Pact <strong>#${esc(shortId(ev.id))}</strong> accepted by <span class="addr">${esc(shortAddr(ev.agentB))}</span>`;
+      } else if (ev.type === 'delivered') {
+        pillCls = 'ep-delivered'; pillLabel = 'DELIVERED';
+        desc = `Pact <strong>#${esc(shortId(ev.id))}</strong> proof submitted by <span class="addr">${esc(shortAddr(ev.agentB))}</span>`;
+      } else {
+        pillCls = 'ep-settled'; pillLabel = 'SETTLED';
+        desc = `Pact <strong>#${esc(shortId(ev.id))}</strong> settled — <span class="amount">${esc(ev.paymentFmt)}</span> released to <span class="addr">${esc(shortAddr(ev.agentB))}</span>`;
       }
+      return `<div class="event-item">
+        <span class="event-pill ${pillCls}">${pillLabel}</span>
+        <div class="event-content">
+          <div class="event-desc">${desc}</div>
+          <div class="event-meta">Block ${esc(ev.blockNumber)}${ev.timeAgo ? ' · ' + esc(ev.timeAgo) : ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
-      lastRefreshed = Date.now();
-      renderPacts();
-      renderFeed();
-      renderLeaderboard();
-      updateRefreshBadge();
+  function renderLeaderboard(entries) {
+    if (!entries.length) {
+      return `<div class="state-box">
+        <div class="state-icon">🏆</div>
+        <div class="state-text">No activity yet.</div>
+        <div class="state-sub">Settled pacts will appear here.</div>
+      </div>`;
     }
+    const medals = ['🥇','🥈','🥉'];
+    const rows = entries.map((e, i) => `<tr>
+      <td style="padding:12px 20px;width:48px">
+        ${i < 3 ? `<span class="rank-medal">${medals[i]}</span>` : `<span class="td-mono td-muted">${i+1}</span>`}
+      </td>
+      <td class="td-mono" style="padding:12px 0;color:#ccc">${esc(shortAddr(e.agent))}</td>
+      <td style="padding:12px 20px;text-align:right;font-weight:600">${e.count}</td>
+      <td class="td-mono" style="padding:12px 20px;text-align:right;color:#00FF94">${esc(e.volumeFmt)}</td>
+      <td style="padding:12px 20px;text-align:right;color:#666;font-family:'JetBrains Mono',monospace;font-size:12px">${e.count * 10}</td>
+    </tr>`).join('');
+    return `<table>
+      <thead><tr>
+        <th>Rank</th><th style="padding-left:0">Agent</th>
+        <th style="text-align:right">Pacts</th>
+        <th style="text-align:right">Volume</th>
+        <th style="text-align:right">Score</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
 
-    /* ── Init ──────────────────────────────────────────────────────── */
-    function init() {
-      renderPacts();
-      renderFeed();
-      renderLeaderboard();
-      lastRefreshed = Date.now();
-      document.getElementById('refresh-text').textContent = 'Updated just now';
+  function showError(containers, msg) {
+    const html = `<div class="state-box error">
+      <div class="state-icon">⚠</div>
+      <div class="state-text">Could not connect to X Layer testnet.</div>
+      <div class="state-sub">${esc(msg)}</div>
+      <div class="state-sub" style="margin-top:6px;color:#555">Retrying in 30s...</div>
+    </div>`;
+    containers.forEach(id => { document.getElementById(id).innerHTML = html; });
+  }
 
-      // Hide loading overlay
-      var overlay = document.getElementById('loading-overlay');
-      overlay.style.opacity = '0';
-      setTimeout(function() { overlay.style.display = 'none'; }, 310);
+  // ── Main data loader ─────────────────────────────
 
-      // Auto-refresh every 10 seconds
-      setInterval(doRefresh, 10000);
-      // Update badge every second
-      setInterval(updateRefreshBadge, 1000);
-    }
+  let loading = false;
 
-    window.addEventListener('DOMContentLoaded', function() {
-      setTimeout(init, 500); // brief loading state
-    });
+  async function refreshAll() {
+    if (loading) return;
+    loading = true;
+    const btn = document.getElementById('refresh-btn');
+    btn.classList.add('spinning');
 
-    /* ── Connect wallet ────────────────────────────────────────────── */
-    function handleConnectWallet(btn) {
-      btn.textContent = 'Connecting…';
-      btn.disabled = true;
-      setTimeout(function() {
-        btn.textContent = 'Connect Wallet';
-        btn.disabled = false;
-        // show a brief toast
-        showToast('Wallet connection coming in v2');
-      }, 800);
-    }
+    try {
+      const provider = new ethers.JsonRpcProvider(RPC_URL);
+      const contract = new ethers.Contract(HOOK_ADDR, HOOK_ABI, provider);
 
-    function showToast(msg) {
-      var t = document.createElement('div');
-      t.textContent = msg;
-      t.style.cssText = [
-        'position:fixed;bottom:24px;right:24px;z-index:200',
-        'background:#1a1a1a;border:1px solid #2a2a2a;color:#a1a1aa',
-        'font-size:13px;font-family:Inter,sans-serif;font-weight:500',
-        'padding:10px 16px;border-radius:6px',
-        'opacity:0;transition:opacity 200ms',
-      ].join(';');
-      document.body.appendChild(t);
-      requestAnimationFrame(function() {
-        t.style.opacity = '1';
-        setTimeout(function() {
-          t.style.opacity = '0';
-          setTimeout(function() { document.body.removeChild(t); }, 210);
-        }, 2500);
+      // Fetch current block
+      const latest = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, latest - SCAN_BLOCKS);
+
+      // Query all event types in parallel
+      const [createdLogs, acceptedLogs, deliveredLogs, settledLogs] = await Promise.all([
+        contract.queryFilter(contract.filters.PactCreated(), fromBlock, 'latest'),
+        contract.queryFilter(contract.filters.PactAccepted(), fromBlock, 'latest'),
+        contract.queryFilter(contract.filters.PactDelivered(), fromBlock, 'latest'),
+        contract.queryFilter(contract.filters.PactSettled(), fromBlock, 'latest')
+      ]);
+
+      // Build lookup sets for status derivation
+      const acceptedIds  = new Set(acceptedLogs.map(l => l.args.id));
+      const deliveredIds = new Set(deliveredLogs.map(l => l.args.id));
+      const settledIds   = new Set(settledLogs.map(l => l.args.id));
+
+      // Get block timestamps for created events (batch)
+      const blockNums = [...new Set([
+        ...createdLogs.map(l => l.blockNumber),
+        ...acceptedLogs.map(l => l.blockNumber),
+        ...deliveredLogs.map(l => l.blockNumber),
+        ...settledLogs.map(l => l.blockNumber)
+      ])];
+
+      // Fetch timestamps for unique blocks (cap at 40 to avoid RPC flood)
+      const tsMap = {};
+      const blockSample = blockNums.slice(-40);
+      await Promise.allSettled(
+        blockSample.map(async bn => {
+          try {
+            const blk = await provider.getBlock(bn);
+            if (blk) tsMap[bn] = blk.timestamp;
+          } catch (_) {}
+        })
+      );
+
+      // Fetch job descriptions for pacts (cap at 20)
+      const pactIds = createdLogs.map(l => l.args.id);
+      const jobMap = {};
+      await Promise.allSettled(
+        pactIds.slice(-20).map(async id => {
+          try {
+            const p = await contract.pacts(id);
+            jobMap[id] = p[3]; // jobDescription at index 3
+          } catch (_) {}
+        })
+      );
+
+      // ── Build pacts list ──
+      const pacts = createdLogs.map(log => {
+        const id = log.args.id;
+        let status = 0;
+        if (settledIds.has(id))   status = 2;
+        else if (deliveredIds.has(id)) status = 2; // delivered = settled in this contract
+        else if (acceptedIds.has(id))  status = 1;
+        return {
+          id,
+          job: jobMap[id] || '—',
+          paymentFmt: formatPayment(log.args.payment),
+          status,
+          timeAgo: timeAgo(tsMap[log.blockNumber]),
+          blockNumber: log.blockNumber
+        };
+      }).reverse(); // newest first
+
+      // ── Build activity feed ──
+      const allEvents = [
+        ...createdLogs.map(l => ({
+          type: 'created', id: l.args.id,
+          agentA: l.args.agentA, agentB: null,
+          paymentFmt: formatPayment(l.args.payment),
+          blockNumber: l.blockNumber,
+          timeAgo: timeAgo(tsMap[l.blockNumber])
+        })),
+        ...acceptedLogs.map(l => ({
+          type: 'accepted', id: l.args.id,
+          agentA: null, agentB: l.args.agentB,
+          paymentFmt: '',
+          blockNumber: l.blockNumber,
+          timeAgo: timeAgo(tsMap[l.blockNumber])
+        })),
+        ...deliveredLogs.map(l => ({
+          type: 'delivered', id: l.args.id,
+          agentA: null, agentB: l.args.agentB,
+          paymentFmt: '',
+          blockNumber: l.blockNumber,
+          timeAgo: timeAgo(tsMap[l.blockNumber])
+        })),
+        ...settledLogs.map(l => ({
+          type: 'settled', id: l.args.id,
+          agentA: null, agentB: l.args.agentB,
+          paymentFmt: formatPayment(l.args.payment),
+          blockNumber: l.blockNumber,
+          timeAgo: timeAgo(tsMap[l.blockNumber])
+        }))
+      ].sort((a, b) => b.blockNumber - a.blockNumber); // newest first
+
+      // ── Build leaderboard ──
+      const lbMap = {};
+      settledLogs.forEach(l => {
+        const agent = l.args.agentB;
+        if (!lbMap[agent]) lbMap[agent] = { count: 0, volume: 0n };
+        lbMap[agent].count++;
+        lbMap[agent].volume += l.args.payment;
       });
-    }
-  </script>
+      const leaderboard = Object.entries(lbMap)
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 10)
+        .map(([agent, d]) => ({
+          agent,
+          count: d.count,
+          volumeFmt: formatPayment(d.volume)
+        }));
 
+      // ── Render ──
+      document.getElementById('pact-count').textContent = pacts.length + ' pacts';
+      document.getElementById('event-count').textContent = allEvents.length + ' events';
+      document.getElementById('pacts-container').innerHTML = renderPactsTable(pacts);
+      document.getElementById('feed-container').innerHTML  = renderFeed(allEvents);
+      document.getElementById('lb-container').innerHTML    = renderLeaderboard(leaderboard);
+      document.getElementById('last-updated').textContent  = 'Updated ' + new Date().toLocaleTimeString();
+
+    } catch (err) {
+      console.error('RPC error:', err);
+      showError(['pacts-container','feed-container','lb-container'], err.message);
+    } finally {
+      loading = false;
+      btn.classList.remove('spinning');
+    }
+  }
+
+  // Initial load + auto-refresh every 30s
+  refreshAll();
+  setInterval(refreshAll, 30000);
+</script>
 </body>
 </html>
