@@ -11,8 +11,8 @@ const xLayerTestnet = defineChain({
 });
 
 const RPC_URL = "https://testrpc.xlayer.tech/terigon";
-const HOOK_ADDRESS = "0x88cd934A339d4fe0f2408D60aA540BA8559910C0" as Address;
-const POOL_MANAGER = "0xD1A80439f7431557705F83ec0d047f7246ec68e5" as Address;
+const HOOK_ADDRESS = "0x180903457dcFD8ec6EC6f1CA7460595f55d290c0" as Address;
+const POOL_MANAGER = "0x45e4598750e4AAA73162d2c2CE292cecBb423cD8" as Address;
 const SWAP_ROUTER = (process.env.SWAP_ROUTER_ADDRESS ?? "0x0000000000000000000000000000000000000001") as Address;
 
 const PACT_ID_FILE = join(__dirname, ".current-pact");
