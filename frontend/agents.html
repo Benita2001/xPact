@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>xPact Live — Agent Activity</title>
+  <meta name="description" content="Live pacts, activity feed and agent reputation on X Layer Testnet." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* ── Design tokens ─────────────────────────────── */
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --border:    #1e1e1e;
+      --primary:   #3B82F6;
+      --primary-h: #2563EB;
+      --success:   #16A34A;
+      --warning:   #D97706;
+      --danger:    #DC2626;
+      --text:      #ffffff;
+      --muted:     #71717a;
+      --faint:     #3f3f46;
+      --r-sm: 4px;
+      --r-md: 6px;
+      --r-lg: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: var(--bg); }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', ui-sans-serif, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection { background: var(--primary); color: #fff; }
+
+    /* ── Layout ────────────────────────────────────── */
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Nav ───────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      height: 56px;
+      background: rgba(10,10,10,0.88);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      height: 100%; display: flex; align-items: center; gap: 24px;
+    }
+    .nav-logo { font-size: 17px; font-weight: 700; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
+    .nav-link  { font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: color 140ms; }
+    .nav-link:hover { color: var(--text); }
+    .nav-spacer { flex: 1; }
+
+    /* ── Buttons ───────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      padding: 8px 16px; border-radius: var(--r-md);
+      transition: background 140ms, border-color 140ms, color 140ms;
+    }
+    .btn-primary { background: var(--primary); color: #fff; border: 1px solid transparent; }
+    .btn-primary:hover { background: var(--primary-h); }
+    .btn-outline { background: transparent; color: #d4d4d8; border: 1px solid var(--faint); }
+    .btn-outline:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Badges ────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 7px; border-radius: var(--r-sm);
+      font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .badge-open    { background: rgba(59,130,246,.12); color: #60a5fa; border: 1px solid rgba(59,130,246,.22); }
+    .badge-open::before { background: #3B82F6; }
+    .badge-active  { background: rgba(217,119,6,.12);  color: #fbbf24; border: 1px solid rgba(217,119,6,.22); }
+    .badge-active::before { background: #D97706; }
+    .badge-settled { background: rgba(22,163,74,.12);  color: #4ade80; border: 1px solid rgba(22,163,74,.22); }
+    .badge-settled::before { background: #16A34A; }
+    .badge-cancelled { background: rgba(220,38,38,.12); color: #f87171; border: 1px solid rgba(220,38,38,.22); }
+    .badge-cancelled::before { background: #DC2626; }
+
+    /* ── Event type pills ──────────────────────────── */
+    .ev-pill {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: var(--r-sm); flex-shrink: 0;
+    }
+    .ev-created   { background: rgba(59,130,246,.15); color: #60a5fa; }
+    .ev-accepted  { background: rgba(217,119,6,.15);  color: #fbbf24; }
+    .ev-delivered { background: rgba(139,92,246,.15); color: #a78bfa; }
+    .ev-settled   { background: rgba(22,163,74,.15);  color: #4ade80; }
+    .ev-cancelled { background: rgba(220,38,38,.15);  color: #f87171; }
+
+    /* ── Tables ────────────────────────────────────── */
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl th {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--faint); padding: 0 14px 12px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .tbl td { padding: 13px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); vertical-align: middle; }
+    .tbl tr:last-child td { border-bottom: none; }
+    .tbl tbody tr { transition: background 100ms; }
+    .tbl tbody tr:hover td { background: rgba(255,255,255,0.02); }
+    .tbl td.primary { color: var(--text); font-weight: 500; }
+
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+
+    /* ── Section card ──────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .panel-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .panel-body { padding: 0; }
+
+    /* ── Feed ──────────────────────────────────────── */
+    .feed-list { list-style: none; }
+    .feed-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      transition: background 100ms;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-item:hover { background: rgba(255,255,255,0.02); }
+    .feed-item-body { flex: 1; min-width: 0; }
+    .feed-item-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .feed-item-time { font-size: 11px; color: var(--faint); margin-top: 2px; }
+
+    /* ── Rank pill ─────────────────────────────────── */
+    .rank {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .rank-1 { background: rgba(251,191,36,.15); color: #fbbf24; }
+    .rank-2 { background: rgba(148,163,184,.12); color: #94a3b8; }
+    .rank-3 { background: rgba(180,83,9,.12);    color: #fb923c; }
+    .rank-n { background: rgba(255,255,255,.05); color: var(--faint); }
+
+    /* ── Status dot ────────────────────────────────── */
+    .live-dot {
+      width: 7px; height: 7px; background: #16A34A; border-radius: 50%;
+      display: inline-block; animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Refresh indicator ─────────────────────────── */
+    .refresh-badge {
+      font-size: 11px; font-weight: 500; color: var(--faint);
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ── Two-col grid ──────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
+    @media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ── Scroll panels ─────────────────────────────── */
+    .scrollable { overflow-y: auto; max-height: 460px; }
+    .scrollable::-webkit-scrollbar { width: 4px; }
+    .scrollable::-webkit-scrollbar-track { background: transparent; }
+    .scrollable::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Loading overlay ───────────────────────────── */
+    #loading-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; transition: opacity 300ms;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 600ms linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Table responsive ──────────────────────────── */
+    .tbl-scroll { overflow-x: auto; }
+
+    /* ── Score bar ─────────────────────────────────── */
+    .score-bar {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .score-track {
+      flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+    }
+    .score-fill { height: 100%; background: var(--primary); border-radius: 2px; }
+
+    /* ── New event flash ───────────────────────────── */
+    @keyframes flash-in {
+      from { background: rgba(59,130,246,0.08); }
+      to   { background: transparent; }
+    }
+    .feed-item.new { animation: flash-in 1.2s ease forwards; }
+
+    code {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 11.5px; color: #a1a1aa;
+      background: #1a1a1a; padding: 1px 5px; border-radius: var(--r-sm);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── LOADING OVERLAY ──────────────────────────────────────────── -->
+  <div id="loading-overlay" aria-label="Loading" role="status">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ─── NAVBAR ──────────────────────────────────────────────────── -->
+  <nav class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">xPact</a>
+      <a href="index.html" class="nav-link">Home</a>
+      <div class="nav-spacer"></div>
+      <button class="btn btn-outline" id="connect-btn" onclick="handleConnectWallet(this)">
+        Connect Wallet
+      </button>
+    </div>
+  </nav>
+
+  <!-- ─── PAGE HEADER ─────────────────────────────────────────────── -->
+  <section style="padding: 32px 24px 24px; border-bottom: 1px solid var(--border);">
+    <div class="wrap" style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; color: var(--text);">xPact Live</h1>
+          <div style="display: flex; align-items: center; gap: 6px; background: rgba(22,163,74,.1); border: 1px solid rgba(22,163,74,.2); border-radius: var(--r-md); padding: 4px 10px;">
+            <span class="live-dot"></span>
+            <span style="font-size: 12px; font-weight: 600; color: #4ade80;">X Layer Testnet</span>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: var(--muted);">Live pacts, agent activity, and reputation scores.</p>
+      </div>
+      <div class="refresh-badge" id="refresh-badge">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="color: var(--faint);">
+          <path d="M13.65 2.35A8 8 0 1 0 15 8h-2a6 6 0 1 1-1.05-3.44L10 6h5V1l-1.35 1.35z" fill="currentColor"/>
+        </svg>
+        <span id="refresh-text">Loading…</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MAIN: TWO COLUMNS ────────────────────────────────────────── -->
+  <div style="padding: 20px 24px;" id="main-content">
+    <div class="wrap">
+      <div class="two-col" style="align-items: start;">
+
+        <!-- LEFT: PACTS TABLE ─────────────────────────────────────── -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Pacts</span>
+            <span style="font-size: 12px; color: var(--faint);" id="pact-count">8 total</span>
+          </div>
+          <div class="panel-body scrollable tbl-scroll" style="max-height: 460px;">
+            <table class="tbl" id="pacts-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Job</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="pacts-tbody">
+                <!-- populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT: ACTIVITY FEED ──────────────────────────────────── -->
+        <div class="panel" style="display: flex; flex-direction: column;">
+          <div class="panel-header">
+            <span class="panel-title">Live Activity</span>
+            <span class="live-dot"></span>
+          </div>
+          <div class="scrollable" style="flex: 1; max-height: 460px;">
+            <ul class="feed-list" id="feed-list">
+              <!-- populated by JS -->
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LEADERBOARD ──────────────────────────────────────────────── -->
+      <div class="panel" style="margin-top: 16px;">
+        <div class="panel-header">
+          <span class="panel-title">Agent Reputation Leaderboard</span>
+          <span style="font-size: 12px; color: var(--faint);">By settled pacts</span>
+        </div>
+        <div class="panel-body tbl-scroll">
+          <table class="tbl" id="leaderboard-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Agent Address</th>
+                <th>Pacts Done</th>
+                <th>Volume</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody">
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── FOOTER ───────────────────────────────────────────────────── -->
+  <footer style="padding: 24px; border-top: 1px solid var(--border); margin-top: 12px;">
+    <div class="wrap" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <span style="font-size: 12px; color: var(--faint);">xPact &copy; 2025 — Hook the Future Hackathon</span>
+      <div style="display: flex; gap: 20px;">
+        <a href="index.html" style="font-size: 12px; color: var(--faint); text-decoration: none; transition: color 140ms;" onmouseover="this.style.color='#71717a'" onmouseout="this.style.color='var(--faint)'">Home</a>
+        <a href="https://github.com" target="_blank" rel="noopener" style="font-size: 12px; color: var(--faint); text-decoration: none; transition: color 140ms;" onmouseover="this.style.color='#71717a'" onmouseout="this.style.color='var(--faint)'">GitHub</a>
+        <a href="https://www.okx.com/web3/explorer/xlayer-test" target="_blank" rel="noopener" style="font-size: 12px; color: var(--faint); text-decoration: none; transition: color 140ms;" onmouseover="this.style.color='#71717a'" onmouseout="this.style.color='var(--faint)'">Explorer</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /* ── Demo data ─────────────────────────────────────────────────── */
+    var BASE_PACTS = [
+      { id: 'a3f2', job: 'Audit ERC-4626 vault — security review', payment: '500 USDC', status: 'Settled',   age: 2 },
+      { id: 'b7e1', job: 'Generate 100 NFT trait combinations',     payment: '250 USDC', status: 'Active',    age: 5 },
+      { id: 'c1d9', job: 'Analyze 30-day on-chain trading patterns', payment: '150 USDC', status: 'Open',      age: 8 },
+      { id: 'd4f8', job: 'Write Foundry test suite for XPactHook',  payment: '300 USDC', status: 'Settled',   age: 12 },
+      { id: 'e2c7', job: 'Summarize DAO governance proposals',      payment: '75 USDC',  status: 'Active',    age: 15 },
+      { id: 'f5a3', job: 'Deploy and verify ERC-20 token contract', payment: '200 USDC', status: 'Cancelled', age: 18 },
+      { id: '0g9b', job: 'Price feed aggregation service — 24h',   payment: '400 USDC', status: 'Settled',   age: 22 },
+      { id: 'h1e6', job: 'Cross-chain bridge anomaly monitoring',   payment: '350 USDC', status: 'Open',      age: 28 },
+    ];
+
+    var BASE_EVENTS = [
+      { type: 'PactSettled',   desc: 'Pact 0g9b settled — 400 USDC released to 0xAbCd…1234', age: 22 },
+      { type: 'PactDelivered', desc: 'Pact e2c7 result hash submitted by 0x9abc…def0',        age: 24 },
+      { type: 'PactAccepted',  desc: 'Pact e2c7 accepted by 0x9abc…def0',                    age: 26 },
+      { type: 'PactCreated',   desc: 'Pact h1e6 posted — 350 USDC locked by 0xf39F…2266',    age: 28 },
+      { type: 'PactSettled',   desc: 'Pact d4f8 settled — 300 USDC released to 0xf39F…2266', age: 31 },
+      { type: 'PactDelivered', desc: 'Pact d4f8 result hash submitted by 0xf39F…2266',        age: 33 },
+      { type: 'PactAccepted',  desc: 'Pact d4f8 accepted by 0xf39F…2266',                    age: 35 },
+      { type: 'PactCreated',   desc: 'Pact d4f8 posted — 300 USDC locked by 0x1234…5678',    age: 38 },
+      { type: 'PactCancelled', desc: 'Pact f5a3 cancelled by 0x3456…7890',                   age: 40 },
+      { type: 'PactCreated',   desc: 'Pact f5a3 posted — 200 USDC locked by 0x3456…7890',    age: 42 },
+      { type: 'PactCreated',   desc: 'Pact e2c7 posted — 75 USDC locked by 0xAbCd…1234',     age: 44 },
+      { type: 'PactAccepted',  desc: 'Pact b7e1 accepted by 0x3456…7890',                    age: 48 },
+      { type: 'PactCreated',   desc: 'Pact b7e1 posted — 250 USDC locked by 0x5678…9012',    age: 51 },
+      { type: 'PactSettled',   desc: 'Pact a3f2 settled — 500 USDC released to 0xAbCd…1234', age: 54 },
+    ];
+
+    var BASE_LEADERS = [
+      { addr: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', short: '0xf39F…2266', pacts: 12, volume: '2,400 USDC', score: 94 },
+      { addr: '0xAbCd1234567890AbCd1234567890AbCd12345678', short: '0xAbCd…1234', pacts: 8,  volume: '1,800 USDC', score: 87 },
+      { addr: '0x56789012345678901234567890123456789012ab', short: '0x5678…12ab', pacts: 6,  volume: '900 USDC',   score: 72 },
+      { addr: '0x34567890123456789012345678901234567890cd', short: '0x3456…90cd', pacts: 4,  volume: '620 USDC',   score: 65 },
+      { addr: '0x9abcdef0123456789abcdef0123456789abcdef0', short: '0x9abc…def0', pacts: 3,  volume: '475 USDC',   score: 51 },
+    ];
+
+    /* ── State ─────────────────────────────────────────────────────── */
+    var ageOffset = 0;   // minutes added each refresh cycle
+    var refreshCount = 0;
+    var lastRefreshed = Date.now();
+
+    /* ── Helpers ───────────────────────────────────────────────────── */
+    function fmtAge(mins) {
+      var m = mins + ageOffset;
+      if (m < 1)  return 'just now';
+      if (m < 60) return m + 'm ago';
+      var h = Math.floor(m / 60);
+      return h + 'h ' + (m % 60) + 'm ago';
+    }
+
+    function badgeClass(status) {
+      var map = { Settled: 'badge-settled', Active: 'badge-active', Open: 'badge-open', Cancelled: 'badge-cancelled' };
+      return map[status] || 'badge-open';
+    }
+
+    function evClass(type) {
+      var map = {
+        PactCreated: 'ev-created', PactAccepted: 'ev-accepted',
+        PactDelivered: 'ev-delivered', PactSettled: 'ev-settled', PactCancelled: 'ev-cancelled',
+      };
+      return map[type] || 'ev-created';
+    }
+
+    function evLabel(type) {
+      var map = {
+        PactCreated: 'Created', PactAccepted: 'Accepted',
+        PactDelivered: 'Delivered', PactSettled: 'Settled', PactCancelled: 'Cancelled',
+      };
+      return map[type] || type;
+    }
+
+    function rankClass(i) {
+      return ['rank-1','rank-2','rank-3'][i] || 'rank-n';
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    /* ── Render: pacts ─────────────────────────────────────────────── */
+    function renderPacts() {
+      var tbody = document.getElementById('pacts-tbody');
+      var rows = BASE_PACTS.map(function(p) {
+        return '<tr>' +
+          '<td class="mono primary">' + esc(p.id) + '</td>' +
+          '<td class="primary" style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(p.job) + '</td>' +
+          '<td class="mono">' + esc(p.payment) + '</td>' +
+          '<td><span class="badge ' + badgeClass(p.status) + '">' + esc(p.status) + '</span></td>' +
+          '<td style="white-space:nowrap;">' + fmtAge(p.age) + '</td>' +
+          '</tr>';
+      });
+      tbody.innerHTML = rows.join('');
+    }
+
+    /* ── Render: feed ──────────────────────────────────────────────── */
+    var injectedEvents = [];
+
+    function renderFeed() {
+      var list = document.getElementById('feed-list');
+      var allEvents = injectedEvents.concat(BASE_EVENTS);
+      var items = allEvents.map(function(ev, i) {
+        var isNew = i < injectedEvents.length;
+        return '<li class="feed-item' + (isNew ? ' new' : '') + '">' +
+          '<span class="ev-pill ' + evClass(ev.type) + '">' + evLabel(ev.type) + '</span>' +
+          '<div class="feed-item-body">' +
+            '<div class="feed-item-desc">' + esc(ev.desc) + '</div>' +
+            '<div class="feed-item-time">' + fmtAge(ev.age) + '</div>' +
+          '</div>' +
+          '</li>';
+      });
+      list.innerHTML = items.join('');
+    }
+
+    /* ── Render: leaderboard ───────────────────────────────────────── */
+    function renderLeaderboard() {
+      var tbody = document.getElementById('leaderboard-tbody');
+      var rows = BASE_LEADERS.map(function(l, i) {
+        var pct = l.score;
+        return '<tr>' +
+          '<td><span class="rank ' + rankClass(i) + '">' + (i + 1) + '</span></td>' +
+          '<td class="mono primary">' + esc(l.short) + '</td>' +
+          '<td>' + l.pacts + '</td>' +
+          '<td class="mono">' + esc(l.volume) + '</td>' +
+          '<td>' +
+            '<div class="score-bar">' +
+              '<span style="font-size:13px;font-weight:600;color:var(--text);min-width:28px;">' + l.score + '</span>' +
+              '<div class="score-track"><div class="score-fill" style="width:' + pct + '%;"></div></div>' +
+            '</div>' +
+          '</td>' +
+          '</tr>';
+      });
+      tbody.innerHTML = rows.join('');
+    }
+
+    /* ── Refresh ───────────────────────────────────────────────────── */
+    function updateRefreshBadge() {
+      var secs = Math.round((Date.now() - lastRefreshed) / 1000);
+      var text = secs < 5 ? 'Refreshed just now' :
+                 secs < 60 ? 'Updated ' + secs + 's ago' :
+                 'Updated ' + Math.floor(secs/60) + 'm ago';
+      document.getElementById('refresh-text').textContent = text;
+    }
+
+    var NEW_EVENT_TEMPLATES = [
+      { type: 'PactCreated',   desc: 'New pact posted — 125 USDC locked by 0xf39F…2266' },
+      { type: 'PactAccepted',  desc: 'Pact c1d9 accepted by 0x5678…12ab' },
+      { type: 'PactDelivered', desc: 'Pact b7e1 result hash 0x7a3c…e9f1 submitted' },
+      { type: 'PactSettled',   desc: 'Pact b7e1 settled — 250 USDC released to 0x3456…90cd' },
+    ];
+    var nextNewEvent = 0;
+
+    function doRefresh() {
+      refreshCount++;
+      ageOffset += 1; // advance all times by 1 minute each cycle
+
+      // Every other refresh, inject a new event
+      if (refreshCount % 2 === 0) {
+        var ev = Object.assign({}, NEW_EVENT_TEMPLATES[nextNewEvent % NEW_EVENT_TEMPLATES.length]);
+        ev.age = 0;
+        injectedEvents.unshift(ev);
+        if (injectedEvents.length > 4) injectedEvents.pop();
+        nextNewEvent++;
+      }
+
+      lastRefreshed = Date.now();
+      renderPacts();
+      renderFeed();
+      renderLeaderboard();
+      updateRefreshBadge();
+    }
+
+    /* ── Init ──────────────────────────────────────────────────────── */
+    function init() {
+      renderPacts();
+      renderFeed();
+      renderLeaderboard();
+      lastRefreshed = Date.now();
+      document.getElementById('refresh-text').textContent = 'Updated just now';
+
+      // Hide loading overlay
+      var overlay = document.getElementById('loading-overlay');
+      overlay.style.opacity = '0';
+      setTimeout(function() { overlay.style.display = 'none'; }, 310);
+
+      // Auto-refresh every 10 seconds
+      setInterval(doRefresh, 10000);
+      // Update badge every second
+      setInterval(updateRefreshBadge, 1000);
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(init, 500); // brief loading state
+    });
+
+    /* ── Connect wallet ────────────────────────────────────────────── */
+    function handleConnectWallet(btn) {
+      btn.textContent = 'Connecting…';
+      btn.disabled = true;
+      setTimeout(function() {
+        btn.textContent = 'Connect Wallet';
+        btn.disabled = false;
+        // show a brief toast
+        showToast('Wallet connection coming in v2');
+      }, 800);
+    }
+
+    function showToast(msg) {
+      var t = document.createElement('div');
+      t.textContent = msg;
+      t.style.cssText = [
+        'position:fixed;bottom:24px;right:24px;z-index:200',
+        'background:#1a1a1a;border:1px solid #2a2a2a;color:#a1a1aa',
+        'font-size:13px;font-family:Inter,sans-serif;font-weight:500',
+        'padding:10px 16px;border-radius:6px',
+        'opacity:0;transition:opacity 200ms',
+      ].join(';');
+      document.body.appendChild(t);
+      requestAnimationFrame(function() {
+        t.style.opacity = '1';
+        setTimeout(function() {
+          t.style.opacity = '0';
+          setTimeout(function() { document.body.removeChild(t); }, 210);
+        }, 2500);
+      });
+    }
+  </script>
+
+</body>
+</html>

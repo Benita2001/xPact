@@ -1,0 +1,18 @@
+{
+  "name": "xpact-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the xPact Uniswap V4 hook on X Layer",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

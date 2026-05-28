@@ -1,0 +1,18 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.26"
+optimizer = true
+optimizer_runs = 200
+remappings = [
+    "@uniswap/v4-core/=lib/v4-core/src/",
+    "@uniswap/v4-periphery/=lib/v4-periphery/src/",
+    "forge-std/=lib/forge-std/src/"
+]
+
+[rpc_endpoints]
+xlayer_testnet = "https://testrpc.xlayer.tech/terigon"
+
+[etherscan]
+xlayer_testnet = { key = "placeholder", url = "https://www.okx.com/web3/explorer/xlayer-test" }
